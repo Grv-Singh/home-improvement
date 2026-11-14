@@ -337,12 +337,22 @@
             </div>
 
             <!-- Selected Object Inspector Card -->
-            <div id="object-card" class="overlay-card" style="display: none; top: 50px; left: 10px; z-index: 22; max-width: 290px; border-left: 3px solid #38bdf8;">
+            <div id="object-card" class="overlay-card" style="display: none; top: 48px; left: 8px; z-index: 25; max-width: 300px; border-left: 3px solid #38bdf8;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                     <div id="obj-title" style="font-weight: 700; font-size: 13px; color: #38bdf8;">Object Name</div>
                     <span class="material-symbols-rounded notranslate" style="cursor: pointer; font-size: 18px;" onclick="closeObjectCard()">close</span>
                 </div>
                 <div id="obj-dims" style="font-size: 11px; color: #cbd5e1; line-height: 1.4;"></div>
+                
+                <!-- Position & Orientation Adjuster -->
+                <div style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px;">
+                    <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Bed Orientation (NE Alignment)</div>
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                        <button class="btn-ui" style="padding: 4px 6px; font-size: 10px;" onclick="rotateBed(30)">Rot +30°</button>
+                        <button class="btn-ui" style="padding: 4px 6px; font-size: 10px;" onclick="rotateBed(-30)">Rot -30°</button>
+                        <button class="btn-ui" style="padding: 4px 6px; font-size: 10px;" onclick="alignBedNE()">Set NE Corner</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Dynamic 3D Scale Labels -->
@@ -644,8 +654,19 @@
         bedGroup.add(p1);
         bedGroup.add(p2);
 
-        // Position against North Wall
-        bedGroup.position.set(0, 0, -W/2 + bL/2);
+        // Position Bed in North-East (NE) orientation
+        function alignBedNE() {
+            // Room bounds: X [-2.5, 2.5] (West to East), Z [-1.5, 1.5] (North to South)
+            // NE Corner: X ~ 1.2m, Z ~ -0.4m, rotated 30 degrees
+            bedGroup.position.set(1.15, 0, -0.45);
+            bedGroup.rotation.y = THREE.MathUtils.degToRad(30);
+        }
+        alignBedNE();
+
+        function rotateBed(deg) {
+            bedGroup.rotation.y += THREE.MathUtils.degToRad(deg);
+        }
+
         archGroup.add(bedGroup);
         selectableObjects.push(bedFrame, mattress, headboard);
         bedFrame.userData = mattress.userData = headboard.userData = bedData;
