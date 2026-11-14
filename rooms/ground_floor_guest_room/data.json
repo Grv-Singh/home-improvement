@@ -1,0 +1,36 @@
+{
+  "id": "ground_floor_guest_room",
+  "name": "Ground Floor Guest Room",
+  "floor": "Ground Floor",
+  "dimensions": {
+    "length_m": 5.0,
+    "width_m": 3.0,
+    "height_m": 3.2,
+    "floor_area_sqm": 15.0,
+    "floor_area_sqft": 161.46,
+    "wall_area_sqm": 51.2,
+    "wall_area_sqft": 551.11,
+    "volume_cum": 48.0
+  },
+  "walls": {
+    "wall_1": {"heading": "40 deg NE", "length_m": 5.0, "height_m": 3.2, "features": "Bed Headboard"},
+    "wall_2": {"heading": "200 deg S", "length_m": 5.0, "height_m": 3.2, "features": "Opposite facing wall"},
+    "wall_3": {"heading": "240 deg SW", "length_m": 3.0, "height_m": 3.2, "features": "Width wall"},
+    "wall_4": {"heading": "150 deg SE", "length_m": 3.0, "height_m": 3.2, "features": "Width wall"}
+  },
+  "furniture": [
+    {
+      "name": "Master Double Bed",
+      "base": "74 x 83 inch",
+      "mattress_height": "21 inch",
+      "headboard_height": "34 inch",
+      "headboard_depth": "7 inch",
+      "alignment": "40 deg NE Wall flush"
+    },
+    {
+      "name": "Ceiling Fan",
+      "sweep": "1200 mm",
+      "downrod": "30 cm"
+    }
+  ]
+}

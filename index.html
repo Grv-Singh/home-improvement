@@ -322,10 +322,9 @@
             <div id="canvas3d-container"></div>
 
             <div class="hud-toggle-bar">
-                <div class="hud-chip">
-                    <span class="material-symbols-rounded notranslate" translate="no">meeting_room</span>
-                    GF Guest Room
-                </div>
+                <select id="room-selector" class="hud-chip" style="background: rgba(15, 23, 42, 0.9); outline: none; border-radius: 14px; cursor: pointer;" onchange="switchRoom(this.value)">
+                    <option value="ground_floor_guest_room">GF Guest Room (5m × 3m)</option>
+                </select>
                 <div class="hud-chip" onclick="toggleRealityMode()">
                     <span class="material-symbols-rounded notranslate" translate="no">auto_awesome</span>
                     <span id="mode-text">3D Arch Model</span>
@@ -809,7 +808,7 @@
 
         // Photorealistic Interior Dome (Actual Room Camera Scan)
         const textureLoader = new THREE.TextureLoader();
-        const photoTexture = textureLoader.load('Ground floor Guest Room.PHOTOSPHERE.jpg');
+        const photoTexture = textureLoader.load('rooms/ground_floor_guest_room/photosphere.jpg');
         const photoGeo = new THREE.SphereGeometry(12, 64, 48);
         photoGeo.scale(-1, 1, 1);
         const photoMat = new THREE.MeshBasicMaterial({ map: photoTexture });
@@ -893,7 +892,7 @@
             if (!panoViewer) {
                 panoViewer = pannellum.viewer('panorama360', {
                     type: 'equirectangular',
-                    panorama: 'Ground floor Guest Room.PHOTOSPHERE.jpg',
+                    panorama: 'rooms/ground_floor_guest_room/photosphere.jpg',
                     autoLoad: true,
                     autoRotate: -1,
                     compass: true
