@@ -29,7 +29,7 @@
       "heading": "240 deg SW",
       "length_m": 3.0,
       "height_m": 3.2,
-      "features": "Width wall"
+      "features": "Centered Window (6ft x 57in x 8in depth) on top of Storage Bench (4in plinth + 15in box x 8in depth x 6ft long)"
     },
     "wall_4": {
       "heading": "150 deg SE",
@@ -66,6 +66,23 @@
       "doorway_opening": "40 inch x 7 ft (1.02 m x 2.13 m)",
       "recess_depth": "27 inch (0.69 m)",
       "door_leaf": "31 inch x 75 inch (0.79 m x 1.91 m)"
+    },
+    {
+      "name": "Window Sill Storage Bench & Plinth",
+      "wall": "240 deg SW Wall",
+      "plinth_base_rise": "4 inch (10 cm)",
+      "box_height": "15 inch (38 cm)",
+      "total_sill_height": "19 inch (48 cm)",
+      "length": "6 ft (1.83 m)",
+      "depth": "8 inch (20 cm)"
+    },
+    {
+      "name": "Main Room Window Unit",
+      "wall": "240 deg SW Wall",
+      "dimensions": "6 ft W x 57 inch H (1.83 m x 1.45 m)",
+      "depth": "8 inch (20 cm)",
+      "sill_start": "19 inch from floor",
+      "window_top": "76 inch (1.93 m) from floor"
     }
   ]
 }
