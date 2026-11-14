@@ -10,6 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <style>
         :root {
             --bg-base: #090d16;
@@ -662,17 +663,44 @@
         bedGroup.add(p1);
         bedGroup.add(p2);
 
-        // Position Bed: Headboard flush against 30° NE Wall, extending toward 200° S Wall
+        // Position Bed: Headboard flush against 40° NE Wall, extending toward 200° S Wall
+        let scannedBedModel = null;
         function alignBedNE() {
-            // bL = 2.11m, bW = 1.88m, W = 3.0m
-            // Headboard rests on North-East Wall (z = -W/2 = -1.5m)
             bedGroup.position.set(0.3, 0, -W/2 + bL/2);
-            bedGroup.rotation.y = 0; // Aligned squarely with 30° NE wall
+            bedGroup.rotation.y = 0; // Aligned squarely with 40° NE wall
+            if (scannedBedModel) {
+                scannedBedModel.position.set(0.3, 0, -W/2 + bL/2);
+                scannedBedModel.rotation.y = 0;
+            }
         }
         alignBedNE();
 
+        // Load Real Photogrammetric 3D Scanned Bed (Kiri Engine Output)
+        const gltfLoader = new THREE.GLTFLoader();
+        gltfLoader.load('rooms/ground_floor_guest_room/model_3d/bed_scan.glb', (gltf) => {
+            scannedBedModel = gltf.scene;
+            scannedBedModel.position.set(0.3, 0, -W/2 + bL/2);
+            scannedBedModel.rotation.y = 0;
+            archGroup.add(scannedBedModel);
+            bedGroup.visible = false; // Replace synthetic placeholder with real photogrammetry scan
+
+            scannedBedModel.traverse((child) => {
+                if (child.isMesh) {
+                    selectableObjects.push(child);
+                    child.userData = {
+                        title: "Real Scanned Bed (Photogrammetry)",
+                        specs: "Captured via Pixel 6 Photogrammetry<br>Dimensions: 74″ × 83″ | H: 52 cm (21″)<br>Texture: Real 4K Photorealistic Material"
+                    };
+                }
+            });
+        }, undefined, (err) => {
+            console.warn("Using parametric bed placeholder:", err);
+            bedGroup.visible = true;
+        });
+
         function rotateBed(deg) {
             bedGroup.rotation.y += THREE.MathUtils.degToRad(deg);
+            if (scannedBedModel) scannedBedModel.rotation.y += THREE.MathUtils.degToRad(deg);
         }
 
         archGroup.add(bedGroup);
