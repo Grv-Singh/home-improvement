@@ -334,6 +334,14 @@
                     <span class="material-symbols-rounded notranslate" translate="no">switch_camera</span>
                     <span id="cam-view-text">Stand Inside</span>
                 </div>
+                
+                <!-- Floating Dynamic Compass -->
+                <div id="compass-widget" class="hud-chip" style="padding: 4px 8px; gap: 4px; border-radius: 16px;" title="Current Camera Heading">
+                    <div id="compass-dial" style="width: 20px; height: 20px; position: relative; border-radius: 50%; border: 1.5px solid #38bdf8; display: flex; align-items: center; justify-content: center;">
+                        <div id="compass-needle" style="width: 2px; height: 16px; background: linear-gradient(to bottom, #ef4444 50%, #94a3b8 50%); position: absolute; transform-origin: center;"></div>
+                    </div>
+                    <span id="compass-heading" style="font-size: 11px; font-weight: 700; color: #fff;">0° N</span>
+                </div>
             </div>
 
             <!-- Selected Object Inspector Card -->
@@ -355,10 +363,12 @@
                 </div>
             </div>
 
-            <!-- Dynamic 3D Scale Labels -->
+            <!-- Dynamic 3D Scale & Direction Labels -->
             <div id="label-len" class="canvas-badge">5.00 m (16.4 ft)</div>
             <div id="label-wid" class="canvas-badge">3.00 m (9.8 ft)</div>
             <div id="label-hgt" class="canvas-badge">3.20 m (10.5 ft)</div>
+            <div id="label-wall-ne" class="canvas-badge" style="border-color: #4ade80; color: #4ade80;">Wall: 30° NE</div>
+            <div id="label-wall-s" class="canvas-badge" style="border-color: #f87171; color: #f87171;">Wall: 200° S</div>
 
             <!-- Mobile Bottom Sheet Drawer -->
             <div id="drawer" class="bottom-sheet">
@@ -728,21 +738,28 @@
         ceiling.visible = floor.visible = boxOutline.visible = grid.visible = false;
         archGroup.visible = false;
 
-        // Dimension Anchors in 3D Space
+        // Dimension & Direction Anchors in 3D Space
         const pLen = new THREE.Vector3(0, 0.05, W/2 + 0.15);
         const pWid = new THREE.Vector3(L/2 + 0.15, 0.05, 0);
         const pHgt = new THREE.Vector3(L/2 + 0.15, H/2, W/2 + 0.15);
+        const pWallNE = new THREE.Vector3(0, H * 0.75, -W/2);
+        const pWallS = new THREE.Vector3(0, H * 0.75, W/2);
 
         const lblLen = document.getElementById('label-len');
         const lblWid = document.getElementById('label-wid');
         const lblHgt = document.getElementById('label-hgt');
+        const lblWallNE = document.getElementById('label-wall-ne');
+        const lblWallS = document.getElementById('label-wall-s');
 
         function update3DLabels() {
             if (isRealistic) {
                 lblLen.style.display = lblWid.style.display = lblHgt.style.display = 'none';
+                if (lblWallNE) lblWallNE.style.display = 'none';
+                if (lblWallS) lblWallS.style.display = 'none';
                 return;
             }
             function projectToScreen(vec, el) {
+                if (!el) return;
                 const temp = vec.clone().project(camera);
                 if (temp.z > 1) {
                     el.style.display = 'none';
@@ -757,6 +774,34 @@
             projectToScreen(pLen, lblLen);
             projectToScreen(pWid, lblWid);
             projectToScreen(pHgt, lblHgt);
+            projectToScreen(pWallNE, lblWallNE);
+            projectToScreen(pWallS, lblWallS);
+        }
+
+        // Dynamic Floating Compass Logic
+        const needle = document.getElementById('compass-needle');
+        const headingTxt = document.getElementById('compass-heading');
+
+        function updateCompass() {
+            const dir = new THREE.Vector3();
+            camera.getWorldDirection(dir);
+            // Project onto horizontal plane
+            let angle = Math.atan2(dir.x, -dir.z) * (180 / Math.PI);
+            if (angle < 0) angle += 360;
+            const deg = Math.round(angle);
+
+            if (needle) needle.style.transform = `rotate(${-deg}deg)`;
+
+            let cardinal = 'N';
+            if (deg >= 22.5 && deg < 67.5) cardinal = 'NE';
+            else if (deg >= 67.5 && deg < 112.5) cardinal = 'E';
+            else if (deg >= 112.5 && deg < 157.5) cardinal = 'SE';
+            else if (deg >= 157.5 && deg < 202.5) cardinal = 'S';
+            else if (deg >= 202.5 && deg < 247.5) cardinal = 'SW';
+            else if (deg >= 247.5 && deg < 292.5) cardinal = 'W';
+            else if (deg >= 292.5 && deg < 337.5) cardinal = 'NW';
+
+            if (headingTxt) headingTxt.textContent = `${deg}° ${cardinal}`;
         }
 
         function selectColor(hex, el) {
@@ -841,6 +886,7 @@
             controls.update();
             renderer.render(scene, camera);
             update3DLabels();
+            updateCompass();
         }
         animate();
 
