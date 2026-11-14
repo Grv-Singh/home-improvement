@@ -11,6 +11,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/DeviceOrientationControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/effects/StereoEffect.js"></script>
     <style>
         :root {
             --bg-base: #090d16;
@@ -313,6 +315,10 @@
                     <span class="material-symbols-rounded notranslate" translate="no">receipt_long</span>
                     BOQ
                 </button>
+                <button id="btn-vr" class="tab-btn" style="background: #e11d48; color: #fff;" onclick="toggleVRHeadsetMode()" title="Stereoscopic Dual-Eye VR Headset Mode">
+                    <span class="material-symbols-rounded notranslate" translate="no">view_in_ar</span>
+                    VR
+                </button>
             </div>
         </div>
     </header>
@@ -354,11 +360,12 @@
                 
                 <!-- Position & Orientation Adjuster -->
                 <div style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px;">
-                    <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Bed Orientation (40° NE Alignment)</div>
+                    <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Bed Orientation & Model Mode</div>
                     <div style="display: flex; gap: 4px; flex-wrap: wrap;">
                         <button class="btn-ui" style="padding: 4px 6px; font-size: 10px;" onclick="rotateBed(30)">Rot +30°</button>
                         <button class="btn-ui" style="padding: 4px 6px; font-size: 10px;" onclick="rotateBed(-30)">Rot -30°</button>
-                        <button class="btn-ui" style="padding: 4px 6px; font-size: 10px;" onclick="alignBedNE()">Set NE Corner</button>
+                        <button class="btn-ui" style="padding: 4px 6px; font-size: 10px;" onclick="alignBedNE()">Set NE Wall</button>
+                        <button id="btn-bed-toggle" class="btn-ui primary" style="padding: 4px 6px; font-size: 10px;" onclick="toggleBedType()">Switch to Clean CAD Bed</button>
                     </div>
                 </div>
             </div>
@@ -575,9 +582,23 @@
         const L = 5.0, W = 3.0, H = 3.2;
 
         // Floor
+        // Floor with Procedural Wood Texture
+        const floorCanvas = document.createElement('canvas');
+        floorCanvas.width = 512; floorCanvas.height = 512;
+        const fCtx = floorCanvas.getContext('2d');
+        fCtx.fillStyle = '#b08968'; fCtx.fillRect(0, 0, 512, 512);
+        fCtx.strokeStyle = '#7f5539'; fCtx.lineWidth = 2;
+        for (let i = 0; i <= 512; i += 64) {
+            fCtx.beginPath(); fCtx.moveTo(0, i); fCtx.lineTo(512, i); fCtx.stroke();
+            fCtx.beginPath(); fCtx.moveTo(i, 0); fCtx.lineTo(i, 512); fCtx.stroke();
+        }
+        const floorTex = new THREE.CanvasTexture(floorCanvas);
+        floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
+        floorTex.repeat.set(5, 3);
+
         const floor = new THREE.Mesh(
             new THREE.PlaneGeometry(L, W),
-            new THREE.MeshStandardMaterial({ color: 0xcdb4db, roughness: 0.35 })
+            new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.35 })
         );
         floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
@@ -675,21 +696,22 @@
         }
         alignBedNE();
 
-        // Load Real Photogrammetric 3D Scanned Bed (Kiri Engine Output)
+        // Load Real Photogrammetric 3D Scanned Bed (Kiri Engine Output - Pre-aligned)
         const gltfLoader = new THREE.GLTFLoader();
-        gltfLoader.load('rooms/ground_floor_guest_room/model_3d/bed_scan.glb', (gltf) => {
+        gltfLoader.load('rooms/ground_floor_guest_room/model_3d/bed_scan_aligned.glb', (gltf) => {
             scannedBedModel = gltf.scene;
-            scannedBedModel.position.set(0.3, 0, -W/2 + bL/2);
+            // Position along 40° NE wall
+            scannedBedModel.position.set(0.3, 0, -W/2 + 1.1);
             scannedBedModel.rotation.y = 0;
             archGroup.add(scannedBedModel);
-            bedGroup.visible = false; // Replace synthetic placeholder with real photogrammetry scan
+            bedGroup.visible = false; // Show real photogrammetry scan by default
 
             scannedBedModel.traverse((child) => {
                 if (child.isMesh) {
                     selectableObjects.push(child);
                     child.userData = {
                         title: "Real Scanned Bed (Photogrammetry)",
-                        specs: "Captured via Pixel 6 Photogrammetry<br>Dimensions: 74″ × 83″ | H: 52 cm (21″)<br>Texture: Real 4K Photorealistic Material"
+                        specs: "Photogrammetric Scan from Kiri Engine<br>Base: 74″ × 83″ | Measured H: 52 cm<br>Aligned squarely with 40° NE Wall"
                     };
                 }
             });
@@ -697,6 +719,15 @@
             console.warn("Using parametric bed placeholder:", err);
             bedGroup.visible = true;
         });
+
+        let showScannedBed = true;
+        function toggleBedType() {
+            showScannedBed = !showScannedBed;
+            if (scannedBedModel) scannedBedModel.visible = showScannedBed;
+            bedGroup.visible = !showScannedBed;
+            const btn = document.getElementById('btn-bed-toggle');
+            if (btn) btn.textContent = showScannedBed ? "Switch to CAD Bed" : "Switch to Scanned Bed";
+        }
 
         function rotateBed(deg) {
             bedGroup.rotation.y += THREE.MathUtils.degToRad(deg);
@@ -1002,6 +1033,52 @@
             }
         }
 
+        // VR Headset Engine (Stereoscopic Dual-Eye + Gyroscope Head Tracking)
+        let isVRMode = false;
+        let stereoEffect = null;
+        let deviceControls = null;
+
+        function initVR() {
+            if (!stereoEffect) {
+                stereoEffect = new THREE.StereoEffect(renderer);
+                stereoEffect.setSize(window.innerWidth, window.innerHeight);
+                stereoEffect.setEyeSeparation(0.064); // 64mm average IPD
+            }
+            if (!deviceControls) {
+                deviceControls = new THREE.DeviceOrientationControls(camera);
+            }
+        }
+
+        function toggleVRHeadsetMode() {
+            initVR();
+            isVRMode = !isVRMode;
+            const btnVR = document.getElementById('btn-vr');
+            
+            if (isVRMode) {
+                if (!isInside) toggleInsideView();
+                if (!isRealistic) toggleRealityMode();
+                
+                document.getElementById('drawer').style.display = 'none';
+                document.querySelector('.hud-toggle-bar').style.display = 'none';
+                
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                }
+
+                btnVR.style.background = '#16a34a';
+                btnVR.innerHTML = '<span class="material-symbols-rounded notranslate" translate="no">close</span> Exit';
+            } else {
+                document.getElementById('drawer').style.display = 'block';
+                document.querySelector('.hud-toggle-bar').style.display = 'flex';
+                if (document.exitFullscreen && document.fullscreenElement) {
+                    document.exitFullscreen().catch(() => {});
+                }
+                btnVR.style.background = '#e11d48';
+                btnVR.innerHTML = '<span class="material-symbols-rounded notranslate" translate="no">view_in_ar</span> VR';
+                renderer.setSize(window.innerWidth, window.innerHeight - 50);
+            }
+        }
+
         function resetCamera() {
             if (isInside) {
                 camera.position.set(0.01, 1.6, 0.05);
@@ -1013,17 +1090,28 @@
         }
 
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / (window.innerHeight - 50);
+            const w = window.innerWidth;
+            const h = isVRMode ? window.innerHeight : window.innerHeight - 50;
+            camera.aspect = w / h;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight - 50);
+            if (isVRMode && stereoEffect) {
+                stereoEffect.setSize(w, h);
+            } else {
+                renderer.setSize(w, h);
+            }
         });
 
         function animate() {
             requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
-            update3DLabels();
-            updateCompass();
+            if (isVRMode && deviceControls) {
+                deviceControls.update();
+                stereoEffect.render(scene, camera);
+            } else {
+                controls.update();
+                renderer.render(scene, camera);
+                update3DLabels();
+                updateCompass();
+            }
         }
         animate();
 
