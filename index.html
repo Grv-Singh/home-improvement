@@ -364,11 +364,10 @@
             </div>
 
             <!-- Dynamic 3D Scale & Direction Labels -->
-            <div id="label-len" class="canvas-badge">5.00 m (16.4 ft)</div>
-            <div id="label-wid" class="canvas-badge">3.00 m (9.8 ft)</div>
-            <div id="label-hgt" class="canvas-badge">3.20 m (10.5 ft)</div>
-            <div id="label-wall-ne" class="canvas-badge" style="border-color: #4ade80; color: #4ade80;">Wall: 30° NE</div>
-            <div id="label-wall-s" class="canvas-badge" style="border-color: #f87171; color: #f87171;">Wall: 200° S</div>
+            <div id="label-wall-ne" class="canvas-badge" style="border-color: #38bdf8; color: #38bdf8;">30° NE Wall (5.0m × 3.2m)</div>
+            <div id="label-wall-s" class="canvas-badge" style="border-color: #f87171; color: #f87171;">200° S Wall (5.0m × 3.2m)</div>
+            <div id="label-wall-sw" class="canvas-badge" style="border-color: #fbbf24; color: #fbbf24;">240° SW Wall (3.0m × 3.2m)</div>
+            <div id="label-wall-se" class="canvas-badge" style="border-color: #34d399; color: #34d399;">150° SE Wall (3.0m × 3.2m)</div>
 
             <!-- Mobile Bottom Sheet Drawer -->
             <div id="drawer" class="bottom-sheet">
@@ -664,12 +663,12 @@
         bedGroup.add(p1);
         bedGroup.add(p2);
 
-        // Position Bed in North-East (NE) orientation
+        // Position Bed: Headboard flush against 30° NE Wall, extending toward 200° S Wall
         function alignBedNE() {
-            // Room bounds: X [-2.5, 2.5] (West to East), Z [-1.5, 1.5] (North to South)
-            // NE Corner: X ~ 1.2m, Z ~ -0.4m, rotated 30 degrees
-            bedGroup.position.set(1.15, 0, -0.45);
-            bedGroup.rotation.y = THREE.MathUtils.degToRad(30);
+            // bL = 2.11m, bW = 1.88m, W = 3.0m
+            // Headboard rests on North-East Wall (z = -W/2 = -1.5m)
+            bedGroup.position.set(0.3, 0, -W/2 + bL/2);
+            bedGroup.rotation.y = 0; // Aligned squarely with 30° NE wall
         }
         alignBedNE();
 
@@ -738,24 +737,23 @@
         ceiling.visible = floor.visible = boxOutline.visible = grid.visible = false;
         archGroup.visible = false;
 
-        // Dimension & Direction Anchors in 3D Space
-        const pLen = new THREE.Vector3(0, 0.05, W/2 + 0.15);
-        const pWid = new THREE.Vector3(L/2 + 0.15, 0.05, 0);
-        const pHgt = new THREE.Vector3(L/2 + 0.15, H/2, W/2 + 0.15);
-        const pWallNE = new THREE.Vector3(0, H * 0.75, -W/2);
-        const pWallS = new THREE.Vector3(0, H * 0.75, W/2);
+        // 4 Wall Directional Anchors
+        const pWallNE = new THREE.Vector3(0, H * 0.7, -W/2);
+        const pWallS  = new THREE.Vector3(0, H * 0.7, W/2);
+        const pWallSW = new THREE.Vector3(-L/2, H * 0.7, 0);
+        const pWallSE = new THREE.Vector3(L/2, H * 0.7, 0);
 
-        const lblLen = document.getElementById('label-len');
-        const lblWid = document.getElementById('label-wid');
-        const lblHgt = document.getElementById('label-hgt');
         const lblWallNE = document.getElementById('label-wall-ne');
-        const lblWallS = document.getElementById('label-wall-s');
+        const lblWallS  = document.getElementById('label-wall-s');
+        const lblWallSW = document.getElementById('label-wall-sw');
+        const lblWallSE = document.getElementById('label-wall-se');
 
         function update3DLabels() {
             if (isRealistic) {
-                lblLen.style.display = lblWid.style.display = lblHgt.style.display = 'none';
                 if (lblWallNE) lblWallNE.style.display = 'none';
-                if (lblWallS) lblWallS.style.display = 'none';
+                if (lblWallS)  lblWallS.style.display = 'none';
+                if (lblWallSW) lblWallSW.style.display = 'none';
+                if (lblWallSE) lblWallSE.style.display = 'none';
                 return;
             }
             function projectToScreen(vec, el) {
@@ -771,11 +769,10 @@
                 el.style.left = `${x}px`;
                 el.style.top = `${y}px`;
             }
-            projectToScreen(pLen, lblLen);
-            projectToScreen(pWid, lblWid);
-            projectToScreen(pHgt, lblHgt);
             projectToScreen(pWallNE, lblWallNE);
-            projectToScreen(pWallS, lblWallS);
+            projectToScreen(pWallS,  lblWallS);
+            projectToScreen(pWallSW, lblWallSW);
+            projectToScreen(pWallSE, lblWallSE);
         }
 
         // Dynamic Floating Compass Logic
