@@ -328,12 +328,21 @@
                 </div>
                 <div class="hud-chip" onclick="toggleRealityMode()">
                     <span class="material-symbols-rounded notranslate" translate="no">auto_awesome</span>
-                    <span id="mode-text">Real Photo View</span>
+                    <span id="mode-text">3D Arch Model</span>
                 </div>
                 <div class="hud-chip" onclick="toggleInsideView()">
                     <span class="material-symbols-rounded notranslate" translate="no">switch_camera</span>
                     <span id="cam-view-text">Stand Inside</span>
                 </div>
+            </div>
+
+            <!-- Selected Object Inspector Card -->
+            <div id="object-card" class="overlay-card" style="display: none; top: 50px; left: 10px; z-index: 22; max-width: 290px; border-left: 3px solid #38bdf8;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <div id="obj-title" style="font-weight: 700; font-size: 13px; color: #38bdf8;">Object Name</div>
+                    <span class="material-symbols-rounded notranslate" style="cursor: pointer; font-size: 18px;" onclick="closeObjectCard()">close</span>
+                </div>
+                <div id="obj-dims" style="font-size: 11px; color: #cbd5e1; line-height: 1.4;"></div>
             </div>
 
             <!-- Dynamic 3D Scale Labels -->
@@ -593,9 +602,110 @@
         boxOutline.position.y = H / 2;
         scene.add(boxOutline);
 
+        // Selectable Architectural BIM Objects Group
+        const selectableObjects = [];
+        const archGroup = new THREE.Group();
+        scene.add(archGroup);
+
+        // --- 1. Real Bed (74″ × 83″ base, 21″ mattress, 34″ headboard, 7″ depth) ---
+        const bW = 74 * 0.0254; // 1.88 m
+        const bL = 83 * 0.0254; // 2.11 m
+        const mH = 21 * 0.0254; // 0.533 m
+        const hH = 34 * 0.0254; // 0.864 m
+        const hD = 7 * 0.0254;  // 0.178 m
+
+        const bedGroup = new THREE.Group();
+        bedGroup.name = "Master Double Bed";
+        const bedData = {
+            title: "Master Double Bed",
+            specs: "Base: 74″ × 83″ (1.88 m × 2.11 m)<br>Mattress Height: 21″ (53 cm)<br>Headboard: 34″ H × 7″ Depth (86 cm × 18 cm)"
+        };
+
+        const woodMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.5 });
+        const bedFrame = new THREE.Mesh(new THREE.BoxGeometry(bW, mH * 0.6, bL), woodMat);
+        bedFrame.position.y = (mH * 0.6) / 2;
+        bedGroup.add(bedFrame);
+
+        const mattMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.85 });
+        const mattress = new THREE.Mesh(new THREE.BoxGeometry(bW * 0.98, mH * 0.4, bL * 0.98), mattMat);
+        mattress.position.y = (mH * 0.6) + (mH * 0.4) / 2;
+        bedGroup.add(mattress);
+
+        const headMat = new THREE.MeshStandardMaterial({ color: 0x4a3525, roughness: 0.4 });
+        const headboard = new THREE.Mesh(new THREE.BoxGeometry(bW, hH, hD), headMat);
+        headboard.position.set(0, hH / 2, -bL / 2 + hD / 2);
+        bedGroup.add(headboard);
+
+        const pillowMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.9 });
+        const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.12, 0.4), pillowMat);
+        p1.position.set(-0.45, mH + 0.06, -bL / 2 + hD + 0.25);
+        const p2 = p1.clone();
+        p2.position.x = 0.45;
+        bedGroup.add(p1);
+        bedGroup.add(p2);
+
+        // Position against North Wall
+        bedGroup.position.set(0, 0, -W/2 + bL/2);
+        archGroup.add(bedGroup);
+        selectableObjects.push(bedFrame, mattress, headboard);
+        bedFrame.userData = mattress.userData = headboard.userData = bedData;
+
+        // --- 2. Ceiling Fan (1200 mm sweep) ---
+        const fanGroup = new THREE.Group();
+        const fanData = {
+            title: "Ceiling Fan",
+            specs: "Sweep: 1200 mm | Downrod: 30 cm<br>Clearance to Floor: 2.85 m"
+        };
+        const fanMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.3 });
+        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35, 16), fanMat);
+        rod.position.y = H - 0.175;
+        const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.08, 24), fanMat);
+        motor.position.y = H - 0.35;
+        fanGroup.add(rod, motor);
+        for (let i = 0; i < 3; i++) {
+            const blade = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.01, 0.12), fanMat);
+            blade.position.y = H - 0.35;
+            blade.rotation.y = (i * Math.PI * 2) / 3;
+            blade.translateX(0.32);
+            fanGroup.add(blade);
+        }
+        archGroup.add(fanGroup);
+        selectableObjects.push(motor);
+        motor.userData = fanData;
+
+        // Raycasting for Selectable Objects
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        renderer.domElement.addEventListener('pointerdown', (e) => {
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const hits = raycaster.intersectObjects(selectableObjects, true);
+
+            if (hits.length > 0) {
+                const data = hits[0].object.userData;
+                if (data && data.title) {
+                    showObjectCard(data.title, data.specs);
+                }
+            }
+        });
+
+        function showObjectCard(title, specs) {
+            document.getElementById('obj-title').textContent = title;
+            document.getElementById('obj-dims').innerHTML = specs;
+            document.getElementById('object-card').style.display = 'block';
+        }
+        function closeObjectCard() {
+            document.getElementById('object-card').style.display = 'none';
+        }
+
         // Hide architectural mesh initially since Realistic Photo mode is default
         wallN.visible = wallS.visible = wallW.visible = wallE.visible = false;
         ceiling.visible = floor.visible = boxOutline.visible = grid.visible = false;
+        archGroup.visible = false;
 
         // Dimension Anchors in 3D Space
         const pLen = new THREE.Vector3(0, 0.05, W/2 + 0.15);
@@ -658,13 +768,15 @@
                 photoDome.visible = true;
                 wallN.visible = wallS.visible = wallW.visible = wallE.visible = false;
                 ceiling.visible = floor.visible = boxOutline.visible = grid.visible = false;
+                archGroup.visible = false;
                 lblLen.style.display = lblWid.style.display = lblHgt.style.display = 'none';
-                modeTxt.textContent = '3D Paint Lab';
+                modeTxt.textContent = '3D Arch Model';
                 if (!isInside) toggleInsideView();
             } else {
                 photoDome.visible = false;
                 wallN.visible = wallS.visible = wallW.visible = wallE.visible = true;
                 ceiling.visible = floor.visible = boxOutline.visible = grid.visible = true;
+                archGroup.visible = true;
                 modeTxt.textContent = 'Real Photo View';
             }
         }
