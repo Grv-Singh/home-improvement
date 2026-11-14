@@ -13,10 +13,30 @@
     "volume_cum": 48.0
   },
   "walls": {
-    "wall_1": {"heading": "40 deg NE", "length_m": 5.0, "height_m": 3.2, "features": "Bed Headboard"},
-    "wall_2": {"heading": "200 deg S", "length_m": 5.0, "height_m": 3.2, "features": "Opposite facing wall"},
-    "wall_3": {"heading": "240 deg SW", "length_m": 3.0, "height_m": 3.2, "features": "Width wall"},
-    "wall_4": {"heading": "150 deg SE", "length_m": 3.0, "height_m": 3.2, "features": "Width wall"}
+    "wall_1": {
+      "heading": "40 deg NE",
+      "length_m": 5.0,
+      "height_m": 3.2,
+      "features": "Bed Headboard"
+    },
+    "wall_2": {
+      "heading": "200 deg S",
+      "length_m": 5.0,
+      "height_m": 3.2,
+      "features": "Opposite facing wall"
+    },
+    "wall_3": {
+      "heading": "240 deg SW",
+      "length_m": 3.0,
+      "height_m": 3.2,
+      "features": "Width wall"
+    },
+    "wall_4": {
+      "heading": "150 deg SE",
+      "length_m": 3.0,
+      "height_m": 3.2,
+      "features": "Doorway (40x84 in) + Recessed Door (31x75 in at 27 in depth) + Full-wall Brown Cupboard/Loft (80 in x 3.2m)"
+    }
   },
   "furniture": [
     {
@@ -31,6 +51,21 @@
       "name": "Ceiling Fan",
       "sweep": "1200 mm",
       "downrod": "30 cm"
+    },
+    {
+      "name": "Built-in Brown Wardrobe & Loft",
+      "wall": "150 deg SE Wall",
+      "width": "80 inch (2.03 m)",
+      "lower_height": "7 ft (2.13 m)",
+      "upper_loft_height": "Full height to 3.2 m ceiling",
+      "finish": "Brown paint"
+    },
+    {
+      "name": "Room Entry Doorway & Door",
+      "wall": "150 deg SE Wall",
+      "doorway_opening": "40 inch x 7 ft (1.02 m x 2.13 m)",
+      "recess_depth": "27 inch (0.69 m)",
+      "door_leaf": "31 inch x 75 inch (0.79 m x 1.91 m)"
     }
   ]
 }

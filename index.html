@@ -679,7 +679,73 @@
         selectableObjects.push(bedFrame, mattress, headboard);
         bedFrame.userData = mattress.userData = headboard.userData = bedData;
 
-        // --- 2. Ceiling Fan (1200 mm sweep) ---
+        // --- 3. Built-in Brown Cupboard & Loft (150° SE Wall) ---
+        // Width: 80" (2.03m), Lower Height: 7ft (2.13m), Upper Loft: to 3.2m ceiling, Depth: 24" (0.60m)
+        const cW = 80 * 0.0254; // 2.03m
+        const cH_lower = 7 * 0.3048; // 2.13m
+        const cH_loft = H - cH_lower; // 1.07m
+        const cDepth = 24 * 0.0254; // 0.60m
+
+        const cupboardGroup = new THREE.Group();
+        const cupboardData = {
+            title: "Built-in Brown Cupboard & Loft",
+            specs: "Width: 80″ (2.03 m) on 150° SE Wall<br>Lower Cupboard: 7 ft H (2.13 m)<br>Upper Loft: to 3.20 m ceiling<br>Finish: Rich Brown Paint"
+        };
+        const brownPaintMat = new THREE.MeshStandardMaterial({ color: 0x4a2e18, roughness: 0.65 });
+        const brownTrimMat = new THREE.MeshStandardMaterial({ color: 0x3d2311, roughness: 0.5 });
+
+        // Lower Cupboard
+        const lowerCupboard = new THREE.Mesh(new THREE.BoxGeometry(cDepth, cH_lower, cW), brownPaintMat);
+        lowerCupboard.position.set(L/2 - cDepth/2, cH_lower/2, -W/2 + cW/2);
+        cupboardGroup.add(lowerCupboard);
+
+        // Upper Loft
+        const upperLoft = new THREE.Mesh(new THREE.BoxGeometry(cDepth, cH_loft, cW), brownTrimMat);
+        upperLoft.position.set(L/2 - cDepth/2, cH_lower + cH_loft/2, -W/2 + cW/2);
+        cupboardGroup.add(upperLoft);
+
+        archGroup.add(cupboardGroup);
+        selectableObjects.push(lowerCupboard, upperLoft);
+        lowerCupboard.userData = upperLoft.userData = cupboardData;
+
+        // --- 4. Room Entryway & Recessed Door (150° SE Wall) ---
+        // Doorway: 40" x 7ft (1.02m x 2.13m), Recess: 27" (0.69m), Door Leaf: 31" x 75" (0.79m x 1.91m)
+        const dW = 40 * 0.0254; // 1.02m
+        const dH = 7 * 0.3048;  // 2.13m
+        const dRecess = 27 * 0.0254; // 0.69m
+        const leafW = 31 * 0.0254; // 0.79m
+        const leafH = 75 * 0.0254; // 1.91m
+
+        const doorGroup = new THREE.Group();
+        const doorData = {
+            title: "Room Entry Doorway & Door",
+            specs: "Doorway Opening: 40″ × 7 ft (1.02 m × 2.13 m)<br>Wall Recess Depth: 27″ (69 cm)<br>Door Leaf: 31″ × 75″ (0.79 m × 1.91 m)<br>Location: 150° SE Wall"
+        };
+
+        // Recessed Jamb Frame
+        const jambMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
+        const jambFrame = new THREE.Mesh(new THREE.BoxGeometry(dRecess, dH, 0.06), jambMat);
+        jambFrame.position.set(L/2 + dRecess/2, dH/2, W/2 - dW);
+        doorGroup.add(jambFrame);
+
+        // Door Leaf
+        const doorLeafMat = new THREE.MeshStandardMaterial({ color: 0x5c381e, roughness: 0.4 });
+        const doorLeaf = new THREE.Mesh(new THREE.BoxGeometry(0.04, leafH, leafW), doorLeafMat);
+        doorLeaf.position.set(L/2 + dRecess - 0.02, leafH/2, W/2 - dW/2);
+        doorGroup.add(doorLeaf);
+
+        // Door Handle
+        const handleMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.8, roughness: 0.2 });
+        const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.12, 12), handleMat);
+        handle.rotation.z = Math.PI / 2;
+        handle.position.set(L/2 + dRecess - 0.06, 0.95, W/2 - dW/2 - leafW/3);
+        doorGroup.add(handle);
+
+        archGroup.add(doorGroup);
+        selectableObjects.push(doorLeaf, jambFrame);
+        doorLeaf.userData = jambFrame.userData = doorData;
+
+        // --- 5. Ceiling Fan (1200 mm sweep) ---
         const fanGroup = new THREE.Group();
         const fanData = {
             title: "Ceiling Fan",
