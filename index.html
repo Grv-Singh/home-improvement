@@ -324,11 +324,15 @@
             <div class="hud-toggle-bar">
                 <div class="hud-chip">
                     <span class="material-symbols-rounded notranslate" translate="no">meeting_room</span>
-                    GF Guest Room (5m × 3m)
+                    GF Guest Room
+                </div>
+                <div class="hud-chip" onclick="toggleRealityMode()">
+                    <span class="material-symbols-rounded notranslate" translate="no">auto_awesome</span>
+                    <span id="mode-text">Real Photo View</span>
                 </div>
                 <div class="hud-chip" onclick="toggleInsideView()">
                     <span class="material-symbols-rounded notranslate" translate="no">switch_camera</span>
-                    <span id="cam-view-text">Inside</span>
+                    <span id="cam-view-text">Stand Inside</span>
                 </div>
             </div>
 
@@ -589,6 +593,10 @@
         boxOutline.position.y = H / 2;
         scene.add(boxOutline);
 
+        // Hide architectural mesh initially since Realistic Photo mode is default
+        wallN.visible = wallS.visible = wallW.visible = wallE.visible = false;
+        ceiling.visible = floor.visible = boxOutline.visible = grid.visible = false;
+
         // Dimension Anchors in 3D Space
         const pLen = new THREE.Vector3(0, 0.05, W/2 + 0.15);
         const pWid = new THREE.Vector3(L/2 + 0.15, 0.05, 0);
@@ -599,6 +607,10 @@
         const lblHgt = document.getElementById('label-hgt');
 
         function update3DLabels() {
+            if (isRealistic) {
+                lblLen.style.display = lblWid.style.display = lblHgt.style.display = 'none';
+                return;
+            }
             function projectToScreen(vec, el) {
                 const temp = vec.clone().project(camera);
                 if (temp.z > 1) {
@@ -622,27 +634,67 @@
             if (el) el.classList.add('selected');
         }
 
-        let isInside = false;
+        // Photorealistic Interior Dome (Actual Room Camera Scan)
+        const textureLoader = new THREE.TextureLoader();
+        const photoTexture = textureLoader.load('Ground floor Guest Room.PHOTOSPHERE.jpg');
+        const photoGeo = new THREE.SphereGeometry(12, 64, 48);
+        photoGeo.scale(-1, 1, 1);
+        const photoMat = new THREE.MeshBasicMaterial({ map: photoTexture });
+        const photoDome = new THREE.Mesh(photoGeo, photoMat);
+        photoDome.position.set(0, 1.6, 0);
+        photoDome.visible = true; // Default to realistic actual view
+        scene.add(photoDome);
+
+        let isRealistic = true;
+        let isInside = true;
+        // Start standing inside at human eye-level (1.6m)
+        camera.position.set(0.01, 1.6, 0.05);
+        controls.target.set(1.5, 1.6, 0);
+
+        function toggleRealityMode() {
+            isRealistic = !isRealistic;
+            const modeTxt = document.getElementById('mode-text');
+            if (isRealistic) {
+                photoDome.visible = true;
+                wallN.visible = wallS.visible = wallW.visible = wallE.visible = false;
+                ceiling.visible = floor.visible = boxOutline.visible = grid.visible = false;
+                lblLen.style.display = lblWid.style.display = lblHgt.style.display = 'none';
+                modeTxt.textContent = '3D Paint Lab';
+                if (!isInside) toggleInsideView();
+            } else {
+                photoDome.visible = false;
+                wallN.visible = wallS.visible = wallW.visible = wallE.visible = true;
+                ceiling.visible = floor.visible = boxOutline.visible = grid.visible = true;
+                modeTxt.textContent = 'Real Photo View';
+            }
+        }
+
         function toggleInsideView() {
             const txt = document.getElementById('cam-view-text');
             if (!isInside) {
-                camera.position.set(0, 1.6, 0);
+                camera.position.set(0.01, 1.6, 0.05);
                 controls.target.set(1.5, 1.6, 0);
+                controls.minDistance = 0.01;
                 txt.textContent = 'Orbit';
                 isInside = true;
             } else {
                 camera.position.set(5.5, 4.2, 6.2);
                 controls.target.set(0, H/2, 0);
-                txt.textContent = 'Inside';
+                controls.minDistance = 1.0;
+                txt.textContent = 'Stand Inside';
                 isInside = false;
+                if (isRealistic) toggleRealityMode(); // Switch to architectural when orbiting
             }
         }
 
         function resetCamera() {
-            camera.position.set(5.5, 4.2, 6.2);
-            controls.target.set(0, H/2, 0);
-            isInside = false;
-            document.getElementById('cam-view-text').textContent = 'Inside';
+            if (isInside) {
+                camera.position.set(0.01, 1.6, 0.05);
+                controls.target.set(1.5, 1.6, 0);
+            } else {
+                camera.position.set(5.5, 4.2, 6.2);
+                controls.target.set(0, H/2, 0);
+            }
         }
 
         window.addEventListener('resize', () => {
