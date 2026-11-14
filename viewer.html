@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360 Photosphere Viewer - Home Improvement</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #121212;
+            font-family: sans-serif;
+        }
+        #panorama {
+            width: 100%;
+            height: 100%;
+        }
+        #controls {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #controls input[type="file"] {
+            display: none;
+        }
+        #controls label {
+            cursor: pointer;
+            background: #2563eb;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <span>360° Photosphere Viewer</span>
+        <label for="filePicker">Load Image</label>
+        <input type="file" id="filePicker" accept="image/*">
+    </div>
+    <div id="panorama"></div>
+
+    <script>
+        const defaultImage = 'Ground floor Guest Room.PHOTOSPHERE.jpg';
+        let viewer = pannellum.viewer('panorama', {
+            type: 'equirectangular',
+            panorama: defaultImage,
+            autoLoad: true,
+            autoRotate: -1,
+            compass: true
+        });
+
+        document.getElementById('filePicker').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    viewer.destroy();
+                    viewer = pannellum.viewer('panorama', {
+                        type: 'equirectangular',
+                        panorama: event.target.result,
+                        autoLoad: true,
+                        autoRotate: -1,
+                        compass: true
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>
