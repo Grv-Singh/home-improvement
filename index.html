@@ -3,1131 +3,368 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>A-31 House Digital Twin & Improvement Portal</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <title>A-31 House — Architectural Digital Twin</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/DeviceOrientationControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/effects/StereoEffect.js"></script>
     <style>
         :root {
-            --bg-base: #090d16;
-            --bg-surface: #0f172a;
-            --bg-card: rgba(15, 23, 42, 0.92);
-            --border-subtle: rgba(255, 255, 255, 0.08);
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --accent: #38bdf8;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --bg: #090c10;
+            --surface: rgba(18, 22, 28, 0.85);
+            --border: rgba(255, 255, 255, 0.12);
+            --text: #f0f6fc;
+            --muted: #8b949e;
+            --accent: #58a6ff;
+            --edge: #388bfd;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-main); height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+
+        #canvas-wrap { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
 
         .material-symbols-rounded {
-            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+            font-size: 18px;
             vertical-align: middle;
-            font-size: 20px;
         }
 
-        /* Responsive Compact Header */
-        header {
-            background: var(--bg-surface);
-            border-bottom: 1px solid var(--border-subtle);
-            padding: 6px 8px;
+        /* Minimal Floating Header */
+        .top-bar {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            right: 14px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            gap: 6px;
-            z-index: 100;
-            flex-shrink: 0;
-            width: 100%;
-        }
-        .brand {
-            display: flex;
             align-items: center;
-            gap: 4px;
-            font-weight: 700;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .pill {
+            pointer-events: auto;
+            background: var(--surface);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--border);
+            padding: 6px 14px;
+            border-radius: 20px;
             font-size: 13px;
-            color: var(--accent);
-            white-space: nowrap;
-        }
-        .brand .material-symbols-rounded {
-            font-size: 18px;
-        }
-        .nav-scroller {
-            display: flex;
-            align-items: center;
-            flex-shrink: 0;
-        }
-        .tabs {
-            display: flex;
-            gap: 3px;
-            background: #1e293b;
-            padding: 2px;
-            border-radius: 16px;
-        }
-        .tab-btn {
-            background: transparent;
-            color: var(--text-muted);
-            border: none;
-            padding: 4px 8px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 11px;
             font-weight: 500;
             display: flex;
             align-items: center;
-            gap: 3px;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        }
+        .pill-title { color: var(--accent); font-weight: 600; }
+        .pill-dims { color: var(--muted); font-size: 11px; }
+
+        /* Minimal Bottom Floating Control */
+        .bottom-bar {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            background: var(--surface);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--border);
+            padding: 5px;
+            border-radius: 24px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        .ctrl-btn {
+            background: transparent;
+            color: var(--muted);
+            border: none;
+            padding: 6px 14px;
+            border-radius: 18px;
+            font-size: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
             transition: all 0.2s;
             white-space: nowrap;
         }
-        .tab-btn .material-symbols-rounded {
-            font-size: 15px;
-        }
-        .tab-btn.active { background: var(--primary); color: #fff; }
+        .ctrl-btn:hover { color: #fff; background: rgba(255,255,255,0.06); }
+        .ctrl-btn.active { background: #238636; color: #fff; }
 
-        .content-area {
-            flex: 1;
-            position: relative;
-            width: 100%;
-            height: calc(100vh - 50px);
-            height: calc(100dvh - 50px);
-            overflow: hidden;
-        }
-
-        .tab-view {
-            display: none;
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-        .tab-view.active { display: block; }
-
-        #canvas3d-container { width: 100%; height: 100%; touch-action: none; }
-
-        /* Floating Overlays tuned for Mobile */
-        .hud-toggle-bar {
+        /* Crisp Corner Edge Tags */
+        .edge-label {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            right: 10px;
-            display: flex;
-            justify-content: space-between;
-            pointer-events: none;
-            z-index: 20;
-        }
-        .hud-chip {
-            pointer-events: auto;
-            background: var(--bg-card);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            padding: 6px 12px;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--accent);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            cursor: pointer;
-        }
-
-        /* Mobile Drawer / Bottom Sheet */
-        .bottom-sheet {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--bg-card);
-            backdrop-filter: blur(16px);
-            border-top: 1px solid var(--border-subtle);
-            border-radius: 16px 16px 0 0;
-            padding: 12px 16px 16px 16px;
-            z-index: 25;
-            box-shadow: 0 -8px 24px rgba(0,0,0,0.6);
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            max-width: 480px;
-            margin: 0 auto;
-        }
-        .bottom-sheet.collapsed {
-            transform: translateY(calc(100% - 44px));
-        }
-        .sheet-handle {
-            width: 36px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
-            margin: 0 auto 8px auto;
-            cursor: pointer;
-        }
-        .sheet-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            padding-bottom: 8px;
-        }
-        .sheet-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        /* Dimension Grid Chips */
-        .dim-pills {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            margin: 10px 0;
-        }
-        .dim-pill {
-            background: rgba(30, 41, 59, 0.7);
-            border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            padding: 6px 10px;
-        }
-        .dim-pill-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
-        .dim-pill-val { font-size: 12px; font-weight: 600; color: #fff; margin-top: 2px; }
-
-        /* Color Swatches Slider */
-        .color-row {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding: 6px 0;
-            scrollbar-width: none;
-        }
-        .color-row::-webkit-scrollbar { display: none; }
-        .swatch-btn {
-            flex: 0 0 38px;
-            height: 38px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.2);
-            cursor: pointer;
-            transition: transform 0.15s, border-color 0.15s;
-        }
-        .swatch-btn:active { transform: scale(0.9); }
-        .swatch-btn.selected { border-color: #fff; transform: scale(1.1); box-shadow: 0 0 10px rgba(255,255,255,0.4); }
-
-        .action-row {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-        .btn-ui {
-            flex: 1;
-            background: #1e293b;
-            color: #fff;
-            border: 1px solid var(--border-subtle);
-            padding: 8px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            cursor: pointer;
-        }
-        .btn-ui.primary { background: var(--primary); border: none; }
-
-        /* 360 Container */
-        #panorama360 { width: 100%; height: 100%; }
-
-        /* Contractor Tab Mobile Optimized */
-        .contractor-scroll {
-            height: 100%;
-            overflow-y: auto;
-            padding: 14px;
-            max-width: 768px;
-            margin: 0 auto;
-        }
-        .contractor-card {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-        }
-        .boq-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 13px;
-        }
-        .boq-row:last-child { border-bottom: none; }
-        .chem-badge {
-            background: rgba(37, 99, 235, 0.15);
-            color: #60a5fa;
+            background: rgba(9, 12, 16, 0.85);
+            border: 1px solid var(--border);
             padding: 3px 8px;
             border-radius: 6px;
             font-size: 11px;
-            font-weight: 500;
-            margin-top: 2px;
-            display: inline-block;
-        }
-
-        /* 3D Canvas Label Overlay */
-        .canvas-badge {
-            position: absolute;
-            background: rgba(15, 23, 42, 0.8);
-            border: 1px solid #38bdf8;
-            color: #38bdf8;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 600;
+            color: var(--text);
             pointer-events: none;
             transform: translate(-50%, -50%);
             white-space: nowrap;
+            letter-spacing: 0.3px;
         }
+        .edge-label b { color: var(--accent); }
     </style>
 </head>
 <body>
-    <header>
-        <div class="brand">
+    <div id="canvas-wrap"></div>
+
+    <div class="top-bar">
+        <div class="pill">
             <span class="material-symbols-rounded notranslate" translate="no">apartment</span>
-            <span>A-31</span>
+            <span class="pill-title">GF Guest Room</span>
+            <span class="pill-dims">5.0m × 3.0m × 3.2m</span>
         </div>
-        <div class="nav-scroller">
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('3d')">
-                    <span class="material-symbols-rounded notranslate" translate="no">3d_rotation</span>
-                    3D
-                </button>
-                <button class="tab-btn" onclick="switchTab('360')">
-                    <span class="material-symbols-rounded notranslate" translate="no">visibility</span>
-                    360°
-                </button>
-                <button class="tab-btn" onclick="switchTab('contractor')">
-                    <span class="material-symbols-rounded notranslate" translate="no">receipt_long</span>
-                    BOQ
-                </button>
-                <button id="btn-vr" class="tab-btn" style="background: #e11d48; color: #fff;" onclick="toggleVRHeadsetMode()" title="Stereoscopic Dual-Eye VR Headset Mode">
-                    <span class="material-symbols-rounded notranslate" translate="no">view_in_ar</span>
-                    VR
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <div class="content-area">
-        <!-- 3D Room View -->
-        <div id="tab-3d" class="tab-view active">
-            <div id="canvas3d-container"></div>
-
-            <div class="hud-toggle-bar">
-                <select id="room-selector" class="hud-chip" style="background: rgba(15, 23, 42, 0.9); outline: none; border-radius: 14px; cursor: pointer;" onchange="switchRoom(this.value)">
-                    <option value="ground_floor_guest_room">GF Guest Room (5m × 3m)</option>
-                </select>
-                <div class="hud-chip" onclick="toggleRealityMode()">
-                    <span class="material-symbols-rounded notranslate" translate="no">auto_awesome</span>
-                    <span id="mode-text">3D Arch Model</span>
-                </div>
-                <div class="hud-chip" onclick="toggleInsideView()">
-                    <span class="material-symbols-rounded notranslate" translate="no">switch_camera</span>
-                    <span id="cam-view-text">Stand Inside</span>
-                </div>
-                
-                <!-- Floating Dynamic Compass -->
-                <div id="compass-widget" class="hud-chip" style="padding: 4px 8px; gap: 4px; border-radius: 16px;" title="Current Camera Heading">
-                    <div id="compass-dial" style="width: 20px; height: 20px; position: relative; border-radius: 50%; border: 1.5px solid #38bdf8; display: flex; align-items: center; justify-content: center;">
-                        <div id="compass-needle" style="width: 2px; height: 16px; background: linear-gradient(to bottom, #ef4444 50%, #94a3b8 50%); position: absolute; transform-origin: center;"></div>
-                    </div>
-                    <span id="compass-heading" style="font-size: 11px; font-weight: 700; color: #fff;">0° N</span>
-                </div>
-            </div>
-
-            <!-- Selected Object Inspector Card -->
-            <div id="object-card" class="overlay-card" style="display: none; top: 48px; left: 8px; z-index: 25; max-width: 300px; border-left: 3px solid #38bdf8;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                    <div id="obj-title" style="font-weight: 700; font-size: 13px; color: #38bdf8;">Object Name</div>
-                    <span class="material-symbols-rounded notranslate" style="cursor: pointer; font-size: 18px;" onclick="closeObjectCard()">close</span>
-                </div>
-                <div id="obj-dims" style="font-size: 11px; color: #cbd5e1; line-height: 1.4;"></div>
-                
-                <!-- Position & Orientation Adjuster -->
-                <div style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px;">
-                    <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Bed Orientation & Model Mode</div>
-                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                        <button class="btn-ui" style="padding: 4px 6px; font-size: 10px;" onclick="rotateBed(30)">Rot +30°</button>
-                        <button class="btn-ui" style="padding: 4px 6px; font-size: 10px;" onclick="rotateBed(-30)">Rot -30°</button>
-                        <button class="btn-ui" style="padding: 4px 6px; font-size: 10px;" onclick="alignBedNE()">Set NE Wall</button>
-                        <button id="btn-bed-toggle" class="btn-ui primary" style="padding: 4px 6px; font-size: 10px;" onclick="toggleBedType()">Switch to Clean CAD Bed</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Dynamic 3D Scale & Direction Labels -->
-            <div id="label-wall-ne" class="canvas-badge" style="border-color: #38bdf8; color: #38bdf8;">40° NE Wall (5.0m × 3.2m)</div>
-            <div id="label-wall-s" class="canvas-badge" style="border-color: #f87171; color: #f87171;">200° S Wall (5.0m × 3.2m)</div>
-            <div id="label-wall-sw" class="canvas-badge" style="border-color: #fbbf24; color: #fbbf24;">240° SW Wall (3.0m × 3.2m)</div>
-            <div id="label-wall-se" class="canvas-badge" style="border-color: #34d399; color: #34d399;">150° SE Wall (3.0m × 3.2m)</div>
-
-            <!-- Mobile Bottom Sheet Drawer -->
-            <div id="drawer" class="bottom-sheet">
-                <div class="sheet-handle" onclick="toggleDrawer()"></div>
-                <div class="sheet-header" onclick="toggleDrawer()">
-                    <div class="sheet-title">
-                        <span class="material-symbols-rounded notranslate" translate="no">palette</span>
-                        Wall Color Simulator & Metrics
-                    </div>
-                    <span id="drawer-arrow" class="material-symbols-rounded notranslate" translate="no">expand_more</span>
-                </div>
-
-                <div class="color-row">
-                    <div class="swatch-btn selected" style="background: #f4efe6;" title="Ivory Whisper" onclick="selectColor(0xf4efe6, this)"></div>
-                    <div class="swatch-btn" style="background: #e2e8f0;" title="Slate Mist" onclick="selectColor(0xe2e8f0, this)"></div>
-                    <div class="swatch-btn" style="background: #fde68a;" title="Warm Ochre" onclick="selectColor(0xfde68a, this)"></div>
-                    <div class="swatch-btn" style="background: #bbf7d0;" title="Sage Green" onclick="selectColor(0xbbf7d0, this)"></div>
-                    <div class="swatch-btn" style="background: #bae6fd;" title="Sky Breeze" onclick="selectColor(0xbae6fd, this)"></div>
-                    <div class="swatch-btn" style="background: #fbcfe8;" title="Blush Rose" onclick="selectColor(0xfbcfe8, this)"></div>
-                    <div class="swatch-btn" style="background: #fed7aa;" title="Terracotta Peach" onclick="selectColor(0xfed7aa, this)"></div>
-                    <div class="swatch-btn" style="background: #ddd6fe;" title="Lavender Frost" onclick="selectColor(0xddd6fe, this)"></div>
-                </div>
-
-                <div class="dim-pills">
-                    <div class="dim-pill">
-                        <div class="dim-pill-label">Floor Area</div>
-                        <div class="dim-pill-val">15.0 m² (161.5 sq ft)</div>
-                    </div>
-                    <div class="dim-pill">
-                        <div class="dim-pill-label">Wall Area (Gross)</div>
-                        <div class="dim-pill-val">51.2 m² (551.1 sq ft)</div>
-                    </div>
-                    <div class="dim-pill">
-                        <div class="dim-pill-label">Height (Clear)</div>
-                        <div class="dim-pill-val">3.20 m (320 cm)</div>
-                    </div>
-                    <div class="dim-pill">
-                        <div class="dim-pill-label">Room Volume</div>
-                        <div class="dim-pill-val">48.0 m³ (1,695 cu ft)</div>
-                    </div>
-                </div>
-
-                <div class="action-row">
-                    <button class="btn-ui primary" onclick="switchTab('360')">
-                        <span class="material-symbols-rounded notranslate" translate="no">visibility</span>
-                        Open 360° Photosphere
-                    </button>
-                    <button class="btn-ui" onclick="resetCamera()">
-                        <span class="material-symbols-rounded notranslate" translate="no">restart_alt</span>
-                        Reset View
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 360 View -->
-        <div id="tab-360" class="tab-view">
-            <div id="panorama360"></div>
-        </div>
-
-        <!-- Contractor BOQ -->
-        <div id="tab-contractor" class="tab-view">
-            <div class="contractor-scroll">
-                <div class="contractor-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <h3 style="font-size: 15px; color: var(--accent); display: flex; align-items: center; gap: 6px;">
-                            <span class="material-symbols-rounded notranslate" translate="no">calculate</span>
-                            Contractor BOQ (For B Sarkar)
-                        </h3>
-                        <span style="font-size: 11px; color: var(--text-muted);">A-31 House</span>
-                    </div>
-
-                    <div class="boq-row">
-                        <div>
-                            <strong>GF Guest Room Floor</strong>
-                            <div style="font-size: 11px; color: var(--text-muted);">5.00 m × 3.00 m base</div>
-                            <span class="chem-badge">FloArm Coat EFG Primer</span>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-weight: 700; color: #fff;">161.5 sq ft</div>
-                            <div style="font-size: 11px; color: var(--text-muted);">15.0 m²</div>
-                        </div>
-                    </div>
-
-                    <div class="boq-row">
-                        <div>
-                            <strong>GF Guest Room Walls (Gross)</strong>
-                            <div style="font-size: 11px; color: var(--text-muted);">16.0 m perimeter × 3.20 m height</div>
-                            <span class="chem-badge">Dichtament DS / DampBarrier</span>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-weight: 700; color: #fff;">551.1 sq ft</div>
-                            <div style="font-size: 11px; color: var(--text-muted);">51.2 m²</div>
-                        </div>
-                    </div>
-
-                    <div class="boq-row">
-                        <div>
-                            <strong>Main Terrace Slab</strong>
-                            <div style="font-size: 11px; color: var(--text-muted);">Awaiting roof length & width</div>
-                            <span class="chem-badge">AquaArm Roof Shield / Roofex 2000</span>
-                        </div>
-                        <div style="text-align: right; color: var(--accent);">
-                            Pending
-                        </div>
-                    </div>
-
-                    <div class="boq-row">
-                        <div>
-                            <strong>Mumpty Surface (Top + Walls)</strong>
-                            <div style="font-size: 11px; color: var(--text-muted);">Awaiting headroom measurements</div>
-                            <span class="chem-badge">AquaArm IC / Micro-concrete</span>
-                        </div>
-                        <div style="text-align: right; color: var(--accent);">
-                            Pending
-                        </div>
-                    </div>
-
-                    <div class="boq-row">
-                        <div>
-                            <strong>Parapet & Common Walls</strong>
-                            <div style="font-size: 11px; color: var(--text-muted);">Running perimeter × height × 2 faces</div>
-                            <span class="chem-badge">TECHSEAL PU2 Expansion Joints</span>
-                        </div>
-                        <div style="text-align: right; color: var(--accent);">
-                            Pending
-                        </div>
-                    </div>
-
-                    <div class="boq-row">
-                        <div>
-                            <strong>Boundary Wall (Efflorescence)</strong>
-                            <div style="font-size: 11px; color: var(--text-muted);">Salt damage height & length</div>
-                            <span class="chem-badge">Rainpel Silane Repellent</span>
-                        </div>
-                        <div style="text-align: right; color: var(--accent);">
-                            Pending
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="pill" id="compass-pill">
+            <span class="material-symbols-rounded notranslate" translate="no">explore</span>
+            <span id="heading-val">40° NE</span>
         </div>
     </div>
 
+    <!-- Minimal Corner / Wall Edge Markers -->
+    <div id="tag-ne" class="edge-label"><b>40° NE Wall</b> · 5.0m</div>
+    <div id="tag-s" class="edge-label"><b>200° S Wall</b> · 5.0m</div>
+    <div id="tag-sw" class="edge-label"><b>240° SW Wall</b> · 3.0m (Window)</div>
+    <div id="tag-se" class="edge-label"><b>150° SE Wall</b> · 3.0m (Door)</div>
+
+    <div class="bottom-bar">
+        <button id="btn-view" class="ctrl-btn active" onclick="toggleView()">
+            <span class="material-symbols-rounded notranslate" translate="no">person</span>
+            Inside View
+        </button>
+        <button class="ctrl-btn" onclick="toggleWireframe()">
+            <span class="material-symbols-rounded notranslate" translate="no">grid_guides</span>
+            Edges Only
+        </button>
+        <button class="ctrl-btn" onclick="resetCam()">
+            <span class="material-symbols-rounded notranslate" translate="no">restart_alt</span>
+            Reset
+        </button>
+    </div>
+
     <script>
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
-            
-            if (tab === '3d') {
-                document.querySelectorAll('.tab-btn')[0].classList.add('active');
-                document.getElementById('tab-3d').classList.add('active');
-            } else if (tab === '360') {
-                document.querySelectorAll('.tab-btn')[1].classList.add('active');
-                document.getElementById('tab-360').classList.add('active');
-                initPanorama();
-            } else if (tab === 'contractor') {
-                document.querySelectorAll('.tab-btn')[2].classList.add('active');
-                document.getElementById('tab-contractor').classList.add('active');
-            }
-        }
-
-        // Bottom Sheet Drawer Toggle
-        let drawerOpen = true;
-        function toggleDrawer() {
-            const drawer = document.getElementById('drawer');
-            const arrow = document.getElementById('drawer-arrow');
-            drawerOpen = !drawerOpen;
-            if (drawerOpen) {
-                drawer.classList.remove('collapsed');
-                arrow.textContent = 'expand_more';
-            } else {
-                drawer.classList.add('collapsed');
-                arrow.textContent = 'expand_less';
-            }
-        }
-
-        // Three.js 3D Engine Setup
-        const container = document.getElementById('canvas3d-container');
+        const wrap = document.getElementById('canvas-wrap');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x090d16);
+        scene.background = new THREE.Color(0x090c10);
 
-        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / (window.innerHeight - 50), 0.1, 1000);
-        camera.position.set(5.5, 4.2, 6.2);
+        const L = 5.0; // Length (X)
+        const W = 3.0; // Width (Z)
+        const H = 3.2; // Height (Y)
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.05, 100);
+        // Start inside standing at eye-level (1.6m) looking along room
+        camera.position.set(0, 1.6, 0.1);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setSize(window.innerWidth, window.innerHeight - 50);
-        renderer.shadowMap.enabled = true;
-        container.appendChild(renderer.domElement);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        wrap.appendChild(renderer.domElement);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.08;
-        controls.maxPolarAngle = Math.PI / 2 + 0.05;
-        controls.minDistance = 1.0;
-        controls.maxDistance = 25.0;
+        controls.target.set(0, 1.6, -1.0);
+        controls.minDistance = 0.05;
+        controls.maxDistance = 20;
 
-        // Ambient & Accent Lighting
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-        const pointLight = new THREE.PointLight(0xffffff, 0.9, 15);
-        pointLight.position.set(0, 2.9, 0);
-        scene.add(pointLight);
+        // Clean Soft Lighting
+        scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+        const ceilingLight = new THREE.PointLight(0xffffff, 0.6, 12);
+        ceilingLight.position.set(0, H - 0.2, 0);
+        scene.add(ceilingLight);
 
-        const L = 5.0, W = 3.0, H = 3.2;
+        // --- Crisp Box Room with True 90° Corner Edges ---
+        // Clean Matte Wall Material
+        const wallMat = new THREE.MeshStandardMaterial({
+            color: 0x1f242d,
+            roughness: 0.8,
+            metalness: 0.1,
+            side: THREE.BackSide
+        });
 
-        // Floor
-        // Floor with Procedural Wood Texture
-        const floorCanvas = document.createElement('canvas');
-        floorCanvas.width = 512; floorCanvas.height = 512;
-        const fCtx = floorCanvas.getContext('2d');
-        fCtx.fillStyle = '#b08968'; fCtx.fillRect(0, 0, 512, 512);
-        fCtx.strokeStyle = '#7f5539'; fCtx.lineWidth = 2;
-        for (let i = 0; i <= 512; i += 64) {
-            fCtx.beginPath(); fCtx.moveTo(0, i); fCtx.lineTo(512, i); fCtx.stroke();
-            fCtx.beginPath(); fCtx.moveTo(i, 0); fCtx.lineTo(i, 512); fCtx.stroke();
-        }
-        const floorTex = new THREE.CanvasTexture(floorCanvas);
-        floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
-        floorTex.repeat.set(5, 3);
+        const roomBoxGeo = new THREE.BoxGeometry(L, H, W);
+        const roomBox = new THREE.Mesh(roomBoxGeo, wallMat);
+        roomBox.position.set(0, H / 2, 0);
+        scene.add(roomBox);
 
-        const floor = new THREE.Mesh(
-            new THREE.PlaneGeometry(L, W),
-            new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.35 })
-        );
+        // Razor-Sharp Structural Corner Edges (No curved bubbles or stitching)
+        const edgesGeo = new THREE.EdgesGeometry(roomBoxGeo);
+        const edgesMat = new THREE.LineBasicMaterial({ color: 0x388bfd, linewidth: 2 });
+        const roomEdges = new THREE.LineSegments(edgesGeo, edgesMat);
+        roomEdges.position.copy(roomBox.position);
+        scene.add(roomEdges);
+
+        // Floor Plane (Subtle Dark Architectural Finish)
+        const floorGeo = new THREE.PlaneGeometry(L, W);
+        const floorMat = new THREE.MeshStandardMaterial({
+            color: 0x161b22,
+            roughness: 0.5,
+            metalness: 0.2
+        });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
+        floor.position.set(0, 0.005, 0);
         scene.add(floor);
 
-        // Ceiling
-        const ceiling = new THREE.Mesh(
-            new THREE.PlaneGeometry(L, W),
-            new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide })
-        );
-        ceiling.position.y = H;
-        ceiling.rotation.x = Math.PI / 2;
-        scene.add(ceiling);
-
-        let wallMat = new THREE.MeshStandardMaterial({ color: 0xf4efe6, side: THREE.DoubleSide, roughness: 0.55 });
-        
-        const wallN = new THREE.Mesh(new THREE.PlaneGeometry(L, H), wallMat);
-        wallN.position.set(0, H/2, -W/2);
-        scene.add(wallN);
-
-        const wallS = new THREE.Mesh(new THREE.PlaneGeometry(L, H), wallMat);
-        wallS.position.set(0, H/2, W/2);
-        wallS.rotation.y = Math.PI;
-        scene.add(wallS);
-
-        const wallW = new THREE.Mesh(new THREE.PlaneGeometry(W, H), wallMat);
-        wallW.position.set(-L/2, H/2, 0);
-        wallW.rotation.y = Math.PI / 2;
-        scene.add(wallW);
-
-        const wallE = new THREE.Mesh(new THREE.PlaneGeometry(W, H), wallMat);
-        wallE.position.set(L/2, H/2, 0);
-        wallE.rotation.y = -Math.PI / 2;
-        scene.add(wallE);
-
-        // Grid & Boundary Outline
-        const grid = new THREE.GridHelper(10, 10, 0x38bdf8, 0x1e293b);
-        grid.position.y = -0.01;
+        // Crisp Floor Grid
+        const grid = new THREE.GridHelper(Math.max(L, W), 10, 0x388bfd, 0x21262d);
+        grid.position.set(0, 0.01, 0);
         scene.add(grid);
 
-        const boxOutline = new THREE.BoxHelper(new THREE.Mesh(new THREE.BoxGeometry(L, H, W)), 0x38bdf8);
-        boxOutline.position.y = H / 2;
-        scene.add(boxOutline);
-
-        // Selectable Architectural BIM Objects Group
-        const selectableObjects = [];
-        const archGroup = new THREE.Group();
-        scene.add(archGroup);
-
-        // --- 1. Real Bed (74″ × 83″ base, 21″ mattress, 34″ headboard, 7″ depth) ---
-        const bW = 74 * 0.0254; // 1.88 m
-        const bL = 83 * 0.0254; // 2.11 m
-        const mH = 21 * 0.0254; // 0.533 m
-        const hH = 34 * 0.0254; // 0.864 m
-        const hD = 7 * 0.0254;  // 0.178 m
+        // --- Architectural Openings & Furniture with Clean Edges ---
+        // 1. Bed (74" x 83" x 21" mattress + 34" headboard) against 40° NE Wall
+        const bW = 74 * 0.0254; // 1.88m
+        const bL = 83 * 0.0254; // 2.11m
+        const mH = 21 * 0.0254; // 0.53m
+        const hH = 34 * 0.0254; // 0.86m
+        const hD = 7 * 0.0254;  // 0.18m
 
         const bedGroup = new THREE.Group();
-        bedGroup.name = "Master Double Bed";
-        const bedData = {
-            title: "Master Double Bed",
-            specs: "Base: 74″ × 83″ (1.88 m × 2.11 m)<br>Mattress Height: 21″ (53 cm)<br>Headboard: 34″ H × 7″ Depth (86 cm × 18 cm)"
-        };
+        const bedMat = new THREE.MeshStandardMaterial({ color: 0x2d333b, roughness: 0.6 });
+        const bedEdgeMat = new THREE.LineBasicMaterial({ color: 0x58a6ff });
 
-        const woodMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.5 });
-        const bedFrame = new THREE.Mesh(new THREE.BoxGeometry(bW, mH * 0.6, bL), woodMat);
-        bedFrame.position.y = (mH * 0.6) / 2;
-        bedGroup.add(bedFrame);
+        const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(bW, mH, bL), bedMat);
+        baseMesh.position.y = mH / 2;
+        const baseEdges = new THREE.LineSegments(new THREE.EdgesGeometry(baseMesh.geometry), bedEdgeMat);
+        baseEdges.position.copy(baseMesh.position);
+        bedGroup.add(baseMesh, baseEdges);
 
-        const mattMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.85 });
-        const mattress = new THREE.Mesh(new THREE.BoxGeometry(bW * 0.98, mH * 0.4, bL * 0.98), mattMat);
-        mattress.position.y = (mH * 0.6) + (mH * 0.4) / 2;
-        bedGroup.add(mattress);
+        const headMesh = new THREE.Mesh(new THREE.BoxGeometry(bW, hH, hD), bedMat);
+        headMesh.position.set(0, hH / 2, -bL / 2 + hD / 2);
+        const headEdges = new THREE.LineSegments(new THREE.EdgesGeometry(headMesh.geometry), bedEdgeMat);
+        headEdges.position.copy(headMesh.position);
+        bedGroup.add(headMesh, headEdges);
 
-        const headMat = new THREE.MeshStandardMaterial({ color: 0x4a3525, roughness: 0.4 });
-        const headboard = new THREE.Mesh(new THREE.BoxGeometry(bW, hH, hD), headMat);
-        headboard.position.set(0, hH / 2, -bL / 2 + hD / 2);
-        bedGroup.add(headboard);
+        // Bed sits flush against 40° NE Wall (Z = -W/2 = -1.5m)
+        bedGroup.position.set(0.3, 0, -W/2 + bL/2);
+        scene.add(bedGroup);
 
-        const pillowMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.9 });
-        const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.12, 0.4), pillowMat);
-        p1.position.set(-0.45, mH + 0.06, -bL / 2 + hD + 0.25);
-        const p2 = p1.clone();
-        p2.position.x = 0.45;
-        bedGroup.add(p1);
-        bedGroup.add(p2);
-
-        // Position Bed: Headboard flush against 40° NE Wall, extending toward 200° S Wall
-        let scannedBedModel = null;
-        function alignBedNE() {
-            bedGroup.position.set(0.3, 0, -W/2 + bL/2);
-            bedGroup.rotation.y = 0; // Aligned squarely with 40° NE wall
-            if (scannedBedModel) {
-                scannedBedModel.position.set(0.3, 0, -W/2 + bL/2);
-                scannedBedModel.rotation.y = 0;
-            }
-        }
-        alignBedNE();
-
-        // Load Real Photogrammetric 3D Scanned Bed (Kiri Engine Output - Pre-aligned)
-        const gltfLoader = new THREE.GLTFLoader();
-        gltfLoader.load('rooms/ground_floor_guest_room/model_3d/bed_scan_aligned.glb', (gltf) => {
-            scannedBedModel = gltf.scene;
-            // Position along 40° NE wall
-            scannedBedModel.position.set(0.3, 0, -W/2 + 1.1);
-            scannedBedModel.rotation.y = 0;
-            archGroup.add(scannedBedModel);
-            bedGroup.visible = false; // Show real photogrammetry scan by default
-
-            scannedBedModel.traverse((child) => {
-                if (child.isMesh) {
-                    selectableObjects.push(child);
-                    child.userData = {
-                        title: "Real Scanned Bed (Photogrammetry)",
-                        specs: "Photogrammetric Scan from Kiri Engine<br>Base: 74″ × 83″ | Measured H: 52 cm<br>Aligned squarely with 40° NE Wall"
-                    };
-                }
-            });
-        }, undefined, (err) => {
-            console.warn("Using parametric bed placeholder:", err);
-            bedGroup.visible = true;
-        });
-
-        let showScannedBed = true;
-        function toggleBedType() {
-            showScannedBed = !showScannedBed;
-            if (scannedBedModel) scannedBedModel.visible = showScannedBed;
-            bedGroup.visible = !showScannedBed;
-            const btn = document.getElementById('btn-bed-toggle');
-            if (btn) btn.textContent = showScannedBed ? "Switch to CAD Bed" : "Switch to Scanned Bed";
-        }
-
-        function rotateBed(deg) {
-            bedGroup.rotation.y += THREE.MathUtils.degToRad(deg);
-            if (scannedBedModel) scannedBedModel.rotation.y += THREE.MathUtils.degToRad(deg);
-        }
-
-        archGroup.add(bedGroup);
-        selectableObjects.push(bedFrame, mattress, headboard);
-        bedFrame.userData = mattress.userData = headboard.userData = bedData;
-
-        // --- 3. Built-in Brown Cupboard & Loft (150° SE Wall) ---
-        // Width: 80" (2.03m), Lower Height: 7ft (2.13m), Upper Loft: to 3.2m ceiling, Depth: 24" (0.60m)
-        const cW = 80 * 0.0254; // 2.03m
-        const cH_lower = 7 * 0.3048; // 2.13m
-        const cH_loft = H - cH_lower; // 1.07m
-        const cDepth = 24 * 0.0254; // 0.60m
-
-        const cupboardGroup = new THREE.Group();
-        const cupboardData = {
-            title: "Built-in Brown Cupboard & Loft",
-            specs: "Width: 80″ (2.03 m) on 150° SE Wall<br>Lower Cupboard: 7 ft H (2.13 m)<br>Upper Loft: to 3.20 m ceiling<br>Finish: Rich Brown Paint"
-        };
-        const brownPaintMat = new THREE.MeshStandardMaterial({ color: 0x4a2e18, roughness: 0.65 });
-        const brownTrimMat = new THREE.MeshStandardMaterial({ color: 0x3d2311, roughness: 0.5 });
-
-        // Lower Cupboard
-        const lowerCupboard = new THREE.Mesh(new THREE.BoxGeometry(cDepth, cH_lower, cW), brownPaintMat);
-        lowerCupboard.position.set(L/2 - cDepth/2, cH_lower/2, -W/2 + cW/2);
-        cupboardGroup.add(lowerCupboard);
-
-        // Upper Loft
-        const upperLoft = new THREE.Mesh(new THREE.BoxGeometry(cDepth, cH_loft, cW), brownTrimMat);
-        upperLoft.position.set(L/2 - cDepth/2, cH_lower + cH_loft/2, -W/2 + cW/2);
-        cupboardGroup.add(upperLoft);
-
-        archGroup.add(cupboardGroup);
-        selectableObjects.push(lowerCupboard, upperLoft);
-        lowerCupboard.userData = upperLoft.userData = cupboardData;
-
-        // --- 4. Room Entryway & Recessed Door (150° SE Wall) ---
-        // Doorway: 40" x 7ft (1.02m x 2.13m), Recess: 27" (0.69m), Door Leaf: 31" x 75" (0.79m x 1.91m)
-        const dW = 40 * 0.0254; // 1.02m
-        const dH = 7 * 0.3048;  // 2.13m
-        const dRecess = 27 * 0.0254; // 0.69m
-        const leafW = 31 * 0.0254; // 0.79m
-        const leafH = 75 * 0.0254; // 1.91m
-
-        const doorGroup = new THREE.Group();
-        const doorData = {
-            title: "Room Entry Doorway & Door",
-            specs: "Doorway Opening: 40″ × 7 ft (1.02 m × 2.13 m)<br>Wall Recess Depth: 27″ (69 cm)<br>Door Leaf: 31″ × 75″ (0.79 m × 1.91 m)<br>Location: 150° SE Wall"
-        };
-
-        const jambMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
-        const jambFrame = new THREE.Mesh(new THREE.BoxGeometry(dRecess, dH, 0.06), jambMat);
-        jambFrame.position.set(L/2 + dRecess/2, dH/2, W/2 - dW);
-        doorGroup.add(jambFrame);
-
-        const doorLeafMat = new THREE.MeshStandardMaterial({ color: 0x5c381e, roughness: 0.4 });
-        const doorLeaf = new THREE.Mesh(new THREE.BoxGeometry(0.04, leafH, leafW), doorLeafMat);
-        doorLeaf.position.set(L/2 + dRecess - 0.02, leafH/2, W/2 - dW/2);
-        doorGroup.add(doorLeaf);
-
-        const handleMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.8, roughness: 0.2 });
-        const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.12, 12), handleMat);
-        handle.rotation.z = Math.PI / 2;
-        handle.position.set(L/2 + dRecess - 0.06, 0.95, W/2 - dW/2 - leafW/3);
-        doorGroup.add(handle);
-
-        archGroup.add(doorGroup);
-        selectableObjects.push(doorLeaf, jambFrame);
-        doorLeaf.userData = jambFrame.userData = doorData;
-
-        // --- 5. Window Unit & Bottom Storage Bench (240° SW Wall) ---
-        // Storage: 4" plinth + 15" box (19" / 0.48m sill), Window: 6ft W x 57" H x 8" depth (1.83m x 1.45m x 0.20m)
-        const winL = 6 * 0.3048; // 1.83m
+        // 2. Window (6ft x 57" x 8" depth) on 240° SW Wall (X = -L/2 = -2.5m)
+        const winW = 6 * 0.3048; // 1.83m
         const winH = 57 * 0.0254; // 1.45m
-        const winDepth = 8 * 0.0254; // 0.20m
-        const plinthH = 4 * 0.0254; // 0.10m
-        const boxH = 15 * 0.0254; // 0.38m
-        const totalSillH = plinthH + boxH; // 0.48m
+        const winBox = new THREE.Mesh(
+            new THREE.BoxGeometry(0.1, winH, winW),
+            new THREE.MeshStandardMaterial({ color: 0x388bfd, transparent: true, opacity: 0.25 })
+        );
+        winBox.position.set(-L/2 + 0.05, 0.48 + winH / 2, 0);
+        const winEdges = new THREE.LineSegments(new THREE.EdgesGeometry(winBox.geometry), new THREE.LineBasicMaterial({ color: 0x58a6ff }));
+        winEdges.position.copy(winBox.position);
+        scene.add(winBox, winEdges);
 
-        const winGroup = new THREE.Group();
-        const winData = {
-            title: "Window Unit & Storage Bench",
-            specs: "Window: 6 ft W × 57″ H (1.83 m × 1.45 m)<br>Depth: 8″ (20 cm) in 240° SW Wall<br>Bottom Storage: 4″ Plinth + 15″ Box (19″ sill height)"
-        };
+        // 3. Door (40" x 7ft opening) on 150° SE Wall (X = L/2 = 2.5m)
+        const doorW = 40 * 0.0254; // 1.02m
+        const doorH = 7 * 0.3048;  // 2.13m
+        const doorFrame = new THREE.LineSegments(
+            new THREE.EdgesGeometry(new THREE.BoxGeometry(0.06, doorH, doorW)),
+            new THREE.LineBasicMaterial({ color: 0x3fb950 })
+        );
+        doorFrame.position.set(L/2 - 0.03, doorH / 2, W/2 - doorW/2);
+        scene.add(doorFrame);
 
-        // 5a. Plinth Base
-        const plinthMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
-        const plinthMesh = new THREE.Mesh(new THREE.BoxGeometry(winDepth, plinthH, winL), plinthMat);
-        plinthMesh.position.set(-L/2 + winDepth/2, plinthH/2, 0);
-        winGroup.add(plinthMesh);
+        // 4. Ceiling Fan
+        const fan = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.12, 0.12, 0.05, 16),
+            new THREE.MeshStandardMaterial({ color: 0x484f58 })
+        );
+        fan.position.set(0, H - 0.25, 0);
+        scene.add(fan);
 
-        // 5b. Storage Bench Box
-        const storageMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.5 });
-        const storageMesh = new THREE.Mesh(new THREE.BoxGeometry(winDepth, boxH, winL), storageMat);
-        storageMesh.position.set(-L/2 + winDepth/2, plinthH + boxH/2, 0);
-        winGroup.add(storageMesh);
+        // --- Dynamic Edge Labels Tracking 3D Wall Corners ---
+        const pNE = new THREE.Vector3(0, H * 0.65, -W/2);
+        const pS  = new THREE.Vector3(0, H * 0.65, W/2);
+        const pSW = new THREE.Vector3(-L/2, H * 0.65, 0);
+        const pSE = new THREE.Vector3(L/2, H * 0.65, 0);
 
-        // 5c. Window Outer Frame
-        const winFrameMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.5 });
-        const frameMesh = new THREE.Mesh(new THREE.BoxGeometry(winDepth, winH, winL), winFrameMat);
-        frameMesh.position.set(-L/2 + winDepth/2, totalSillH + winH/2, 0);
-        winGroup.add(frameMesh);
+        const tagNE = document.getElementById('tag-ne');
+        const tagS  = document.getElementById('tag-s');
+        const tagSW = document.getElementById('tag-sw');
+        const tagSE = document.getElementById('tag-se');
 
-        // 5d. Glass Panes
-        const glassMat = new THREE.MeshPhysicalMaterial({
-            color: 0x93c5fd,
-            metalness: 0.1,
-            roughness: 0.05,
-            transmission: 0.85,
-            transparent: true,
-            opacity: 0.65
-        });
-        const glassPane = new THREE.Mesh(new THREE.BoxGeometry(0.02, winH * 0.92, winL * 0.92), glassMat);
-        glassPane.position.set(-L/2 + winDepth/2, totalSillH + winH/2, 0);
-        winGroup.add(glassPane);
-
-        archGroup.add(winGroup);
-        selectableObjects.push(storageMesh, frameMesh, glassPane);
-        storageMesh.userData = frameMesh.userData = glassPane.userData = winData;
-
-        // --- 5. Ceiling Fan (1200 mm sweep) ---
-        const fanGroup = new THREE.Group();
-        const fanData = {
-            title: "Ceiling Fan",
-            specs: "Sweep: 1200 mm | Downrod: 30 cm<br>Clearance to Floor: 2.85 m"
-        };
-        const fanMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.3 });
-        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35, 16), fanMat);
-        rod.position.y = H - 0.175;
-        const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.08, 24), fanMat);
-        motor.position.y = H - 0.35;
-        fanGroup.add(rod, motor);
-        for (let i = 0; i < 3; i++) {
-            const blade = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.01, 0.12), fanMat);
-            blade.position.y = H - 0.35;
-            blade.rotation.y = (i * Math.PI * 2) / 3;
-            blade.translateX(0.32);
-            fanGroup.add(blade);
-        }
-        archGroup.add(fanGroup);
-        selectableObjects.push(motor);
-        motor.userData = fanData;
-
-        // Raycasting for Selectable Objects
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        renderer.domElement.addEventListener('pointerdown', (e) => {
-            const rect = renderer.domElement.getBoundingClientRect();
-            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const hits = raycaster.intersectObjects(selectableObjects, true);
-
-            if (hits.length > 0) {
-                const data = hits[0].object.userData;
-                if (data && data.title) {
-                    showObjectCard(data.title, data.specs);
-                }
-            }
-        });
-
-        function showObjectCard(title, specs) {
-            document.getElementById('obj-title').textContent = title;
-            document.getElementById('obj-dims').innerHTML = specs;
-            document.getElementById('object-card').style.display = 'block';
-        }
-        function closeObjectCard() {
-            document.getElementById('object-card').style.display = 'none';
-        }
-
-        // Hide architectural mesh initially since Realistic Photo mode is default
-        wallN.visible = wallS.visible = wallW.visible = wallE.visible = false;
-        ceiling.visible = floor.visible = boxOutline.visible = grid.visible = false;
-        archGroup.visible = false;
-
-        // 4 Wall Directional Anchors
-        const pWallNE = new THREE.Vector3(0, H * 0.7, -W/2);
-        const pWallS  = new THREE.Vector3(0, H * 0.7, W/2);
-        const pWallSW = new THREE.Vector3(-L/2, H * 0.7, 0);
-        const pWallSE = new THREE.Vector3(L/2, H * 0.7, 0);
-
-        const lblWallNE = document.getElementById('label-wall-ne');
-        const lblWallS  = document.getElementById('label-wall-s');
-        const lblWallSW = document.getElementById('label-wall-sw');
-        const lblWallSE = document.getElementById('label-wall-se');
-
-        function update3DLabels() {
-            if (isRealistic) {
-                if (lblWallNE) lblWallNE.style.display = 'none';
-                if (lblWallS)  lblWallS.style.display = 'none';
-                if (lblWallSW) lblWallSW.style.display = 'none';
-                if (lblWallSE) lblWallSE.style.display = 'none';
-                return;
-            }
-            function projectToScreen(vec, el) {
-                if (!el) return;
-                const temp = vec.clone().project(camera);
-                if (temp.z > 1) {
-                    el.style.display = 'none';
-                    return;
-                }
-                const x = (temp.x * 0.5 + 0.5) * window.innerWidth;
-                const y = (-(temp.y * 0.5) + 0.5) * (window.innerHeight - 50);
+        function updateLabels() {
+            function place(vec, el) {
+                const p = vec.clone().project(camera);
+                if (p.z > 1) { el.style.display = 'none'; return; }
                 el.style.display = 'block';
-                el.style.left = `${x}px`;
-                el.style.top = `${y}px`;
+                el.style.left = `${(p.x * 0.5 + 0.5) * window.innerWidth}px`;
+                el.style.top = `${(-p.y * 0.5 + 0.5) * window.innerHeight}px`;
             }
-            projectToScreen(pWallNE, lblWallNE);
-            projectToScreen(pWallS,  lblWallS);
-            projectToScreen(pWallSW, lblWallSW);
-            projectToScreen(pWallSE, lblWallSE);
+            place(pNE, tagNE);
+            place(pS,  tagS);
+            place(pSW, tagSW);
+            place(pSE, tagSE);
         }
 
-        // Dynamic Floating Compass Logic
-        const needle = document.getElementById('compass-needle');
-        const headingTxt = document.getElementById('compass-heading');
-
-        function updateCompass() {
+        // Compass Heading
+        const headingEl = document.getElementById('heading-val');
+        function updateHeading() {
             const dir = new THREE.Vector3();
             camera.getWorldDirection(dir);
-            // Project onto horizontal plane
-            let angle = Math.atan2(dir.x, -dir.z) * (180 / Math.PI);
-            if (angle < 0) angle += 360;
-            const deg = Math.round(angle);
-
-            if (needle) needle.style.transform = `rotate(${-deg}deg)`;
-
-            let cardinal = 'N';
-            if (deg >= 22.5 && deg < 67.5) cardinal = 'NE';
-            else if (deg >= 67.5 && deg < 112.5) cardinal = 'E';
-            else if (deg >= 112.5 && deg < 157.5) cardinal = 'SE';
-            else if (deg >= 157.5 && deg < 202.5) cardinal = 'S';
-            else if (deg >= 202.5 && deg < 247.5) cardinal = 'SW';
-            else if (deg >= 247.5 && deg < 292.5) cardinal = 'W';
-            else if (deg >= 292.5 && deg < 337.5) cardinal = 'NW';
-
-            if (headingTxt) headingTxt.textContent = `${deg}° ${cardinal}`;
+            let deg = Math.round(Math.atan2(dir.x, -dir.z) * (180 / Math.PI));
+            if (deg < 0) deg += 360;
+            let card = 'N';
+            if (deg >= 22.5 && deg < 67.5) card = 'NE';
+            else if (deg >= 67.5 && deg < 112.5) card = 'E';
+            else if (deg >= 112.5 && deg < 157.5) card = 'SE';
+            else if (deg >= 157.5 && deg < 202.5) card = 'S';
+            else if (deg >= 202.5 && deg < 247.5) card = 'SW';
+            else if (deg >= 247.5 && deg < 292.5) card = 'W';
+            else if (deg >= 292.5 && deg < 337.5) card = 'NW';
+            headingEl.textContent = `${deg}° ${card}`;
         }
 
-        function selectColor(hex, el) {
-            wallMat.color.setHex(hex);
-            document.querySelectorAll('.swatch-btn').forEach(b => b.classList.remove('selected'));
-            if (el) el.classList.add('selected');
-        }
-
-        // Photorealistic Interior Dome (Actual Room Camera Scan)
-        const textureLoader = new THREE.TextureLoader();
-        const photoTexture = textureLoader.load('rooms/ground_floor_guest_room/photosphere.jpg');
-        const photoGeo = new THREE.SphereGeometry(12, 64, 48);
-        photoGeo.scale(-1, 1, 1);
-        const photoMat = new THREE.MeshBasicMaterial({ map: photoTexture });
-        const photoDome = new THREE.Mesh(photoGeo, photoMat);
-        photoDome.position.set(0, 1.6, 0);
-        photoDome.visible = true; // Default to realistic actual view
-        scene.add(photoDome);
-
-        let isRealistic = true;
-        let isInside = true;
-        // Start standing inside at human eye-level (1.6m)
-        camera.position.set(0.01, 1.6, 0.05);
-        controls.target.set(1.5, 1.6, 0);
-
-        function toggleRealityMode() {
-            isRealistic = !isRealistic;
-            const modeTxt = document.getElementById('mode-text');
-            if (isRealistic) {
-                photoDome.visible = true;
-                wallN.visible = wallS.visible = wallW.visible = wallE.visible = false;
-                ceiling.visible = floor.visible = boxOutline.visible = grid.visible = false;
-                archGroup.visible = false;
-                lblLen.style.display = lblWid.style.display = lblHgt.style.display = 'none';
-                modeTxt.textContent = '3D Arch Model';
-                if (!isInside) toggleInsideView();
+        // Camera Toggle: Inside Eye-Level vs Outside Orbit
+        let inside = true;
+        function toggleView() {
+            const btn = document.getElementById('btn-view');
+            inside = !inside;
+            if (inside) {
+                camera.position.set(0, 1.6, 0.1);
+                controls.target.set(0, 1.6, -1.0);
+                controls.minDistance = 0.05;
+                btn.innerHTML = '<span class="material-symbols-rounded notranslate" translate="no">person</span> Inside View';
             } else {
-                photoDome.visible = false;
-                wallN.visible = wallS.visible = wallW.visible = wallE.visible = true;
-                ceiling.visible = floor.visible = boxOutline.visible = grid.visible = true;
-                archGroup.visible = true;
-                modeTxt.textContent = 'Real Photo View';
-            }
-        }
-
-        function toggleInsideView() {
-            const txt = document.getElementById('cam-view-text');
-            if (!isInside) {
-                camera.position.set(0.01, 1.6, 0.05);
-                controls.target.set(1.5, 1.6, 0);
-                controls.minDistance = 0.01;
-                txt.textContent = 'Orbit';
-                isInside = true;
-            } else {
-                camera.position.set(5.5, 4.2, 6.2);
-                controls.target.set(0, H/2, 0);
+                camera.position.set(5.5, 4.5, 6.0);
+                controls.target.set(0, H / 2, 0);
                 controls.minDistance = 1.0;
-                txt.textContent = 'Stand Inside';
-                isInside = false;
-                if (isRealistic) toggleRealityMode(); // Switch to architectural when orbiting
+                btn.innerHTML = '<span class="material-symbols-rounded notranslate" translate="no">architecture</span> Orbit View';
             }
         }
 
-        // VR Headset Engine (Stereoscopic Dual-Eye + Gyroscope Head Tracking)
-        let isVRMode = false;
-        let stereoEffect = null;
-        let deviceControls = null;
-
-        function initVR() {
-            if (!stereoEffect) {
-                stereoEffect = new THREE.StereoEffect(renderer);
-                stereoEffect.setSize(window.innerWidth, window.innerHeight);
-                stereoEffect.setEyeSeparation(0.064); // 64mm average IPD
-            }
-            if (!deviceControls) {
-                deviceControls = new THREE.DeviceOrientationControls(camera);
-            }
+        let wireOnly = false;
+        function toggleWireframe() {
+            wireOnly = !wireOnly;
+            roomBox.visible = !wireOnly;
+            floor.visible = !wireOnly;
         }
 
-        function toggleVRHeadsetMode() {
-            initVR();
-            isVRMode = !isVRMode;
-            const btnVR = document.getElementById('btn-vr');
-            
-            if (isVRMode) {
-                if (!isInside) toggleInsideView();
-                if (!isRealistic) toggleRealityMode();
-                
-                document.getElementById('drawer').style.display = 'none';
-                document.querySelector('.hud-toggle-bar').style.display = 'none';
-                
-                if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen().catch(() => {});
-                }
-
-                btnVR.style.background = '#16a34a';
-                btnVR.innerHTML = '<span class="material-symbols-rounded notranslate" translate="no">close</span> Exit';
+        function resetCam() {
+            if (inside) {
+                camera.position.set(0, 1.6, 0.1);
+                controls.target.set(0, 1.6, -1.0);
             } else {
-                document.getElementById('drawer').style.display = 'block';
-                document.querySelector('.hud-toggle-bar').style.display = 'flex';
-                if (document.exitFullscreen && document.fullscreenElement) {
-                    document.exitFullscreen().catch(() => {});
-                }
-                btnVR.style.background = '#e11d48';
-                btnVR.innerHTML = '<span class="material-symbols-rounded notranslate" translate="no">view_in_ar</span> VR';
-                renderer.setSize(window.innerWidth, window.innerHeight - 50);
-            }
-        }
-
-        function resetCamera() {
-            if (isInside) {
-                camera.position.set(0.01, 1.6, 0.05);
-                controls.target.set(1.5, 1.6, 0);
-            } else {
-                camera.position.set(5.5, 4.2, 6.2);
-                controls.target.set(0, H/2, 0);
+                camera.position.set(5.5, 4.5, 6.0);
+                controls.target.set(0, H / 2, 0);
             }
         }
 
         window.addEventListener('resize', () => {
-            const w = window.innerWidth;
-            const h = isVRMode ? window.innerHeight : window.innerHeight - 50;
-            camera.aspect = w / h;
+            camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-            if (isVRMode && stereoEffect) {
-                stereoEffect.setSize(w, h);
-            } else {
-                renderer.setSize(w, h);
-            }
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
         function animate() {
             requestAnimationFrame(animate);
-            if (isVRMode && deviceControls) {
-                deviceControls.update();
-                stereoEffect.render(scene, camera);
-            } else {
-                controls.update();
-                renderer.render(scene, camera);
-                update3DLabels();
-                updateCompass();
-            }
+            controls.update();
+            renderer.render(scene, camera);
+            updateLabels();
+            updateHeading();
         }
         animate();
-
-        // 360 Panorama Loader
-        let panoViewer = null;
-        function initPanorama() {
-            if (!panoViewer) {
-                panoViewer = pannellum.viewer('panorama360', {
-                    type: 'equirectangular',
-                    panorama: 'rooms/ground_floor_guest_room/photosphere.jpg',
-                    autoLoad: true,
-                    autoRotate: -1,
-                    compass: true
-                });
-            }
-        }
     </script>
 </body>
 </html>
