@@ -136,9 +136,9 @@
             <span class="material-symbols-rounded notranslate" translate="no">person</span>
             Inside View
         </button>
-        <button id="btn-cloud" class="ctrl-btn" onclick="toggleCloud()">
-            <span class="material-symbols-rounded notranslate" translate="no">grain</span>
-            45k Points
+        <button id="btn-stereo" class="ctrl-btn active" onclick="toggleStereo()">
+            <span class="material-symbols-rounded notranslate" translate="no">view_in_ar</span>
+            110k Stereo Depth
         </button>
         <button id="btn-traj" class="ctrl-btn" onclick="toggleTraj()">
             <span class="material-symbols-rounded notranslate" translate="no">route</span>
@@ -353,15 +353,15 @@
             floor.visible = !wireOnly;
         }
 
-        // --- Live SfM Point Cloud & Walk Trajectory ---
-        let pointCloud = null;
+        // --- Live Stereo Metric Depth Cloud ---
+        let stereoCloud = null;
         let trajLine = null;
         let trajPoints = [];
         let isPlaying = false;
         let playIndex = 0;
 
-        // Load 45k true-color spatial points
-        fetch('rooms/ground_floor_guest_room/model_3d/sfm_points.bin')
+        // Load 110k True-Metric Stereo Points (Calculated from 10cm hardware baseline)
+        fetch('rooms/ground_floor_guest_room/model_3d/stereo_points.bin')
             .then(res => res.arrayBuffer())
             .then(buf => {
                 const view = new DataView(buf);
@@ -376,16 +376,22 @@
                 geo.setAttribute('color', new THREE.BufferAttribute(fCol, 3));
 
                 const mat = new THREE.PointsMaterial({
-                    size: 0.028,
+                    size: 0.035,
                     vertexColors: true,
                     sizeAttenuation: true
                 });
-                pointCloud = new THREE.Points(geo, mat); pointCloud.visible = false;
-                scene.add(pointCloud);
+                stereoCloud = new THREE.Points(geo, mat);
+                stereoCloud.position.set(0, 1.2, -1.8);
+                scene.add(stereoCloud);
             })
-            .catch(err => console.error("Could not load sfm points:", err));
+            .catch(err => console.error("Could not load stereo points:", err));
 
-        // Load 125 camera trajectory walkthrough points
+        function toggleStereo() {
+            const btn = document.getElementById('btn-stereo');
+            if (!stereoCloud) return;
+            stereoCloud.visible = !stereoCloud.visible;
+            btn.classList.toggle('active', stereoCloud.visible);
+        }
         fetch('rooms/ground_floor_guest_room/model_3d/trajectory_scaled.json')
             .then(res => res.json())
             .then(data => {
