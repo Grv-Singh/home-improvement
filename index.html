@@ -137,9 +137,9 @@
             <span class="material-symbols-rounded notranslate" translate="no">person</span>
             Inside View
         </button>
-        <button id="btn-stereo" class="ctrl-btn" onclick="toggleStereo()">
+        <button id="btn-mesh" class="ctrl-btn active" onclick="toggleSolidMesh()">
             <span class="material-symbols-rounded notranslate" translate="no">view_in_ar</span>
-            Depth Cloud
+            Solid 3D Mesh
         </button>
         <button id="btn-traj" class="ctrl-btn" onclick="toggleTraj()">
             <span class="material-symbols-rounded notranslate" translate="no">route</span>
@@ -347,45 +347,35 @@
             floor.visible = !wireOnly;
         }
 
-        // --- Live Stereo Metric Depth Cloud ---
-        let stereoCloud = null;
+        // --- Live Solid 3D Reconstructed Surface Mesh ---
+        let solidRoomMesh = null;
         let trajLine = null;
         let trajPoints = [];
         let isPlaying = false;
         let playIndex = 0;
 
-        // Load 110k True-Metric Stereo Points (Calculated from 10cm hardware baseline)
-        fetch('rooms/ground_floor_guest_room/model_3d/stereo_points.bin')
-            .then(res => res.arrayBuffer())
-            .then(buf => {
-                const view = new DataView(buf);
-                const N = view.getUint32(0, true);
-                const pos = new Float32Array(buf, 4, N * 3);
-                const col = new Uint8Array(buf, 4 + N * 3 * 4, N * 3);
-                const fCol = new Float32Array(N * 3);
-                for (let i = 0; i < N * 3; i++) fCol[i] = col[i] / 255.0;
+        // Load 60,000-polygon Watertight Solid Surface Mesh (Poisson Reconstructed from Dual-Phone Stereo)
+        gltfLoader.load('rooms/ground_floor_guest_room/model_3d/room_solid_mesh.glb', (gltf) => {
+            solidRoomMesh = gltf.scene;
+            solidRoomMesh.position.set(0, 1.2, -1.8);
+            solidRoomMesh.traverse((child) => {
+                if (child.isMesh) {
+                    child.material = new THREE.MeshStandardMaterial({
+                        color: 0xd8d3c8,
+                        roughness: 0.7,
+                        metalness: 0.1,
+                        side: THREE.DoubleSide
+                    });
+                }
+            });
+            scene.add(solidRoomMesh);
+        }, undefined, (err) => console.error("Could not load solid mesh:", err));
 
-                const geo = new THREE.BufferGeometry();
-                geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-                geo.setAttribute('color', new THREE.BufferAttribute(fCol, 3));
-
-                const mat = new THREE.PointsMaterial({
-                    size: 0.035,
-                    vertexColors: true,
-                    sizeAttenuation: true
-                });
-                stereoCloud = new THREE.Points(geo, mat);
-                stereoCloud.position.set(0, 1.2, -1.8);
-                stereoCloud.visible = false;
-                scene.add(stereoCloud);
-            })
-            .catch(err => console.error("Could not load stereo points:", err));
-
-        function toggleStereo() {
-            const btn = document.getElementById('btn-stereo');
-            if (!stereoCloud) return;
-            stereoCloud.visible = !stereoCloud.visible;
-            btn.classList.toggle('active', stereoCloud.visible);
+        function toggleSolidMesh() {
+            const btn = document.getElementById('btn-mesh');
+            if (!solidRoomMesh) return;
+            solidRoomMesh.visible = !solidRoomMesh.visible;
+            btn.classList.toggle('active', solidRoomMesh.visible);
         }
         fetch('rooms/ground_floor_guest_room/model_3d/trajectory_scaled.json')
             .then(res => res.json())
