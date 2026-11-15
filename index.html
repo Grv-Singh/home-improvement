@@ -136,11 +136,11 @@
             <span class="material-symbols-rounded notranslate" translate="no">person</span>
             Inside View
         </button>
-        <button id="btn-cloud" class="ctrl-btn active" onclick="toggleCloud()">
+        <button id="btn-cloud" class="ctrl-btn" onclick="toggleCloud()">
             <span class="material-symbols-rounded notranslate" translate="no">grain</span>
             45k Points
         </button>
-        <button id="btn-traj" class="ctrl-btn active" onclick="toggleTraj()">
+        <button id="btn-traj" class="ctrl-btn" onclick="toggleTraj()">
             <span class="material-symbols-rounded notranslate" translate="no">route</span>
             Walk Path
         </button>
@@ -380,7 +380,7 @@
                     vertexColors: true,
                     sizeAttenuation: true
                 });
-                pointCloud = new THREE.Points(geo, mat);
+                pointCloud = new THREE.Points(geo, mat); pointCloud.visible = false;
                 scene.add(pointCloud);
             })
             .catch(err => console.error("Could not load sfm points:", err));
@@ -393,7 +393,7 @@
                 if (trajPoints.length > 1) {
                     const lineGeo = new THREE.BufferGeometry().setFromPoints(trajPoints);
                     const lineMat = new THREE.LineBasicMaterial({ color: 0x3fb950, linewidth: 3 });
-                    trajLine = new THREE.Line(lineGeo, lineMat);
+                    trajLine = new THREE.Line(lineGeo, lineMat); trajLine.visible = false;
                     scene.add(trajLine);
                 }
             })
