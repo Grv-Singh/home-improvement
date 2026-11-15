@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <style>
         :root {
             --bg: #090c10;
@@ -136,9 +137,9 @@
             <span class="material-symbols-rounded notranslate" translate="no">person</span>
             Inside View
         </button>
-        <button id="btn-stereo" class="ctrl-btn active" onclick="toggleStereo()">
+        <button id="btn-stereo" class="ctrl-btn" onclick="toggleStereo()">
             <span class="material-symbols-rounded notranslate" translate="no">view_in_ar</span>
-            110k Stereo Depth
+            Depth Cloud
         </button>
         <button id="btn-traj" class="ctrl-btn" onclick="toggleTraj()">
             <span class="material-symbols-rounded notranslate" translate="no">route</span>
@@ -189,12 +190,12 @@
         ceilingLight.position.set(0, H - 0.2, 0);
         scene.add(ceilingLight);
 
-        // --- Crisp Box Room with True 90° Corner Edges ---
-        // Clean Matte Wall Material
+        // --- Realistic Architectural Room Interior ---
+        // Solid Warm Off-White Wall Finish (Matches actual room wall paint)
         const wallMat = new THREE.MeshStandardMaterial({
-            color: 0x1f242d,
-            roughness: 0.8,
-            metalness: 0.1,
+            color: 0xded8ce,
+            roughness: 0.85,
+            metalness: 0.05,
             side: THREE.BackSide
         });
 
@@ -203,78 +204,71 @@
         roomBox.position.set(0, H / 2, 0);
         scene.add(roomBox);
 
-        // Razor-Sharp Structural Corner Edges (No curved bubbles or stitching)
+        // Razor-Sharp Structural Corner Edges
         const edgesGeo = new THREE.EdgesGeometry(roomBoxGeo);
-        const edgesMat = new THREE.LineBasicMaterial({ color: 0x388bfd, linewidth: 2 });
+        const edgesMat = new THREE.LineBasicMaterial({ color: 0x4a5568, linewidth: 1.5 });
         const roomEdges = new THREE.LineSegments(edgesGeo, edgesMat);
         roomEdges.position.copy(roomBox.position);
         scene.add(roomEdges);
 
-        // Floor Plane (Subtle Dark Architectural Finish)
+        // Realistic Floor (Warm Gray Polished Vitrified Tile)
         const floorGeo = new THREE.PlaneGeometry(L, W);
         const floorMat = new THREE.MeshStandardMaterial({
-            color: 0x161b22,
-            roughness: 0.5,
-            metalness: 0.2
+            color: 0x363a40,
+            roughness: 0.35,
+            metalness: 0.15
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.position.set(0, 0.005, 0);
         scene.add(floor);
 
-        // Crisp Floor Grid
-        const grid = new THREE.GridHelper(Math.max(L, W), 10, 0x388bfd, 0x21262d);
+        // Subtle Architectural Grid
+        const grid = new THREE.GridHelper(Math.max(L, W), 10, 0x58a6ff, 0x2d333b);
         grid.position.set(0, 0.01, 0);
         scene.add(grid);
 
-        // --- Architectural Openings & Furniture with Clean Edges ---
-        // 1. Bed (74" x 83" x 21" mattress + 34" headboard) against 40° NE Wall
-        const bW = 74 * 0.0254; // 1.88m
-        const bL = 83 * 0.0254; // 2.11m
-        const mH = 21 * 0.0254; // 0.53m
-        const hH = 34 * 0.0254; // 0.86m
-        const hD = 7 * 0.0254;  // 0.18m
+        // --- Real 3D Scanned Bed & Architectural Furniture ---
+        // 1. Real 3D Scanned Bed (Kiri Engine photogrammetry scan)
+        const gltfLoader = new THREE.GLTFLoader();
+        let bedModel = null;
+        gltfLoader.load('rooms/ground_floor_guest_room/model_3d/bed_scan_aligned.glb', (gltf) => {
+            bedModel = gltf.scene;
+            bedModel.position.set(0.3, 0, -W/2 + 0.95);
+            bedModel.scale.set(1.0, 1.0, 1.0);
+            scene.add(bedModel);
+        }, undefined, (err) => {
+            console.warn("Falling back to architectural bed mesh:", err);
+            // Fallback mesh if GLB fails
+            const bW = 74 * 0.0254, bL = 83 * 0.0254, mH = 21 * 0.0254, hH = 34 * 0.0254;
+            const bGroup = new THREE.Group();
+            const bMesh = new THREE.Mesh(new THREE.BoxGeometry(bW, mH, bL), new THREE.MeshStandardMaterial({ color: 0x4a4036 }));
+            bMesh.position.y = mH/2;
+            bGroup.add(bMesh);
+            bGroup.position.set(0.3, 0, -W/2 + bL/2);
+            scene.add(bGroup);
+        });
 
-        const bedGroup = new THREE.Group();
-        const bedMat = new THREE.MeshStandardMaterial({ color: 0x2d333b, roughness: 0.6 });
-        const bedEdgeMat = new THREE.LineBasicMaterial({ color: 0x58a6ff });
-
-        const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(bW, mH, bL), bedMat);
-        baseMesh.position.y = mH / 2;
-        const baseEdges = new THREE.LineSegments(new THREE.EdgesGeometry(baseMesh.geometry), bedEdgeMat);
-        baseEdges.position.copy(baseMesh.position);
-        bedGroup.add(baseMesh, baseEdges);
-
-        const headMesh = new THREE.Mesh(new THREE.BoxGeometry(bW, hH, hD), bedMat);
-        headMesh.position.set(0, hH / 2, -bL / 2 + hD / 2);
-        const headEdges = new THREE.LineSegments(new THREE.EdgesGeometry(headMesh.geometry), bedEdgeMat);
-        headEdges.position.copy(headMesh.position);
-        bedGroup.add(headMesh, headEdges);
-
-        // Bed sits flush against 40° NE Wall (Z = -W/2 = -1.5m)
-        bedGroup.position.set(0.3, 0, -W/2 + bL/2);
-        scene.add(bedGroup);
-
-        // 2. Window (6ft x 57" x 8" depth) on 240° SW Wall (X = -L/2 = -2.5m)
+        // 2. Window (6ft x 57" opening) on 240° SW Wall
         const winW = 6 * 0.3048; // 1.83m
         const winH = 57 * 0.0254; // 1.45m
         const winBox = new THREE.Mesh(
-            new THREE.BoxGeometry(0.1, winH, winW),
-            new THREE.MeshStandardMaterial({ color: 0x388bfd, transparent: true, opacity: 0.25 })
+            new THREE.BoxGeometry(0.12, winH, winW),
+            new THREE.MeshStandardMaterial({ color: 0x90caf9, transparent: true, opacity: 0.35, roughness: 0.1 })
         );
-        winBox.position.set(-L/2 + 0.05, 0.48 + winH / 2, 0);
-        const winEdges = new THREE.LineSegments(new THREE.EdgesGeometry(winBox.geometry), new THREE.LineBasicMaterial({ color: 0x58a6ff }));
+        winBox.position.set(-L/2 + 0.06, 0.48 + winH / 2, 0);
+        const winEdges = new THREE.LineSegments(new THREE.EdgesGeometry(winBox.geometry), new THREE.LineBasicMaterial({ color: 0x388bfd }));
         winEdges.position.copy(winBox.position);
         scene.add(winBox, winEdges);
 
-        // 3. Door (40" x 7ft opening) on 150° SE Wall (X = L/2 = 2.5m)
+        // 3. Door (40" x 7ft opening) on 150° SE Wall
         const doorW = 40 * 0.0254; // 1.02m
         const doorH = 7 * 0.3048;  // 2.13m
         const doorFrame = new THREE.LineSegments(
-            new THREE.EdgesGeometry(new THREE.BoxGeometry(0.06, doorH, doorW)),
-            new THREE.LineBasicMaterial({ color: 0x3fb950 })
+            new THREE.EdgesGeometry(new THREE.BoxGeometry(0.08, doorH, doorW)),
+            new THREE.LineBasicMaterial({ color: 0x3fb950, linewidth: 2 })
         );
-        doorFrame.position.set(L/2 - 0.03, doorH / 2, W/2 - doorW/2);
+        doorFrame.position.set(L/2 - 0.04, doorH / 2, W/2 - doorW/2);
         scene.add(doorFrame);
 
         // 4. Ceiling Fan
@@ -382,6 +376,7 @@
                 });
                 stereoCloud = new THREE.Points(geo, mat);
                 stereoCloud.position.set(0, 1.2, -1.8);
+                stereoCloud.visible = false;
                 scene.add(stereoCloud);
             })
             .catch(err => console.error("Could not load stereo points:", err));
