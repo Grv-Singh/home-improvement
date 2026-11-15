@@ -136,6 +136,18 @@
             <span class="material-symbols-rounded notranslate" translate="no">person</span>
             Inside View
         </button>
+        <button id="btn-cloud" class="ctrl-btn active" onclick="toggleCloud()">
+            <span class="material-symbols-rounded notranslate" translate="no">grain</span>
+            45k Points
+        </button>
+        <button id="btn-traj" class="ctrl-btn active" onclick="toggleTraj()">
+            <span class="material-symbols-rounded notranslate" translate="no">route</span>
+            Walk Path
+        </button>
+        <button id="btn-play" class="ctrl-btn" onclick="togglePlayback()">
+            <span class="material-symbols-rounded notranslate" translate="no">play_arrow</span>
+            Flythrough
+        </button>
         <button class="ctrl-btn" onclick="toggleWireframe()">
             <span class="material-symbols-rounded notranslate" translate="no">grid_guides</span>
             Edges Only
@@ -341,7 +353,83 @@
             floor.visible = !wireOnly;
         }
 
+        // --- Live SfM Point Cloud & Walk Trajectory ---
+        let pointCloud = null;
+        let trajLine = null;
+        let trajPoints = [];
+        let isPlaying = false;
+        let playIndex = 0;
+
+        // Load 45k true-color spatial points
+        fetch('rooms/ground_floor_guest_room/model_3d/sfm_points.bin')
+            .then(res => res.arrayBuffer())
+            .then(buf => {
+                const view = new DataView(buf);
+                const N = view.getUint32(0, true);
+                const pos = new Float32Array(buf, 4, N * 3);
+                const col = new Uint8Array(buf, 4 + N * 3 * 4, N * 3);
+                const fCol = new Float32Array(N * 3);
+                for (let i = 0; i < N * 3; i++) fCol[i] = col[i] / 255.0;
+
+                const geo = new THREE.BufferGeometry();
+                geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+                geo.setAttribute('color', new THREE.BufferAttribute(fCol, 3));
+
+                const mat = new THREE.PointsMaterial({
+                    size: 0.028,
+                    vertexColors: true,
+                    sizeAttenuation: true
+                });
+                pointCloud = new THREE.Points(geo, mat);
+                scene.add(pointCloud);
+            })
+            .catch(err => console.error("Could not load sfm points:", err));
+
+        // Load 125 camera trajectory walkthrough points
+        fetch('rooms/ground_floor_guest_room/model_3d/trajectory_scaled.json')
+            .then(res => res.json())
+            .then(data => {
+                trajPoints = data.map(d => new THREE.Vector3(...d.pos));
+                if (trajPoints.length > 1) {
+                    const lineGeo = new THREE.BufferGeometry().setFromPoints(trajPoints);
+                    const lineMat = new THREE.LineBasicMaterial({ color: 0x3fb950, linewidth: 3 });
+                    trajLine = new THREE.Line(lineGeo, lineMat);
+                    scene.add(trajLine);
+                }
+            })
+            .catch(err => console.error("Could not load trajectory:", err));
+
+        function toggleCloud() {
+            const btn = document.getElementById('btn-cloud');
+            if (!pointCloud) return;
+            pointCloud.visible = !pointCloud.visible;
+            btn.classList.toggle('active', pointCloud.visible);
+        }
+
+        function toggleTraj() {
+            const btn = document.getElementById('btn-traj');
+            if (!trajLine) return;
+            trajLine.visible = !trajLine.visible;
+            btn.classList.toggle('active', trajLine.visible);
+        }
+
+        function togglePlayback() {
+            const btn = document.getElementById('btn-play');
+            if (trajPoints.length < 2) return;
+            isPlaying = !isPlaying;
+            btn.classList.toggle('active', isPlaying);
+            if (isPlaying) {
+                playIndex = 0;
+                btn.innerHTML = '<span class="material-symbols-rounded notranslate" translate="no">pause</span> Pause Walk';
+            } else {
+                btn.innerHTML = '<span class="material-symbols-rounded notranslate" translate="no">play_arrow</span> Flythrough';
+            }
+        }
+
         function resetCam() {
+            isPlaying = false;
+            document.getElementById('btn-play').classList.remove('active');
+            document.getElementById('btn-play').innerHTML = '<span class="material-symbols-rounded notranslate" translate="no">play_arrow</span> Flythrough';
             if (inside) {
                 camera.position.set(0, 1.6, 0.1);
                 controls.target.set(0, 1.6, -1.0);
@@ -359,6 +447,22 @@
 
         function animate() {
             requestAnimationFrame(animate);
+
+            // Flythrough along actual reconstructed phone path
+            if (isPlaying && trajPoints.length > 2) {
+                playIndex = (playIndex + 0.15) % trajPoints.length;
+                const currIdx = Math.floor(playIndex);
+                const nextIdx = (currIdx + 1) % trajPoints.length;
+                const lookIdx = (currIdx + 4) % trajPoints.length;
+                const alpha = playIndex - currIdx;
+
+                const currPos = trajPoints[currIdx];
+                const nextPos = trajPoints[nextIdx];
+                camera.position.lerpVectors(currPos, nextPos, alpha);
+
+                controls.target.copy(trajPoints[lookIdx]);
+            }
+
             controls.update();
             renderer.render(scene, camera);
             updateLabels();

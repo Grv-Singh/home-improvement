@@ -1,4 +1,5 @@
-
+*.mp4
+video_processing/
 *.zip
 *.obj
-*.mtl
+3DModel.*
